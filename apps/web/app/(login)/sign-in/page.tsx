@@ -1,33 +1,43 @@
 'use client';
 
 import Link from 'next/link';
-import { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { useEffect } from 'react';
 
-import { Globe } from 'lucide-react';
+import { Globe, Loader2 } from 'lucide-react';
 
 import { APP_CONFIG } from '@/config/app-config';
+import { Button } from '@/components/ui/button';
 
-import { AuthForm } from '../login-form';
-import { GoogleButton } from '@/components/ui/google-button';
+export default function SignIn() {
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get('redirect');
+  const priceId = searchParams.get('priceId');
 
-export default function LoginV2() {
+  useEffect(() => {
+    // Build Auth0 login URL with return parameters
+    const params = new URLSearchParams();
+    if (redirect) params.set('redirect', redirect);
+    if (priceId) params.set('priceId', priceId);
+
+    const returnTo = params.toString() ? `/dashboard?${params.toString()}` : '/dashboard';
+    const loginUrl = `/api/auth/login?returnTo=${encodeURIComponent(returnTo)}`;
+
+    // Redirect to Auth0 login
+    window.location.href = loginUrl;
+  }, [redirect, priceId]);
+
   return (
     <>
       <div className="mx-auto flex w-full flex-col justify-center space-y-8 sm:w-[350px]">
         <div className="space-y-2 text-center">
-          <h1 className="text-3xl font-medium">Login to your account</h1>
-          <p className="text-muted-foreground text-sm">Please enter your details to login.</p>
+          <h1 className="text-3xl font-medium">Redirecting to Login...</h1>
+          <p className="text-muted-foreground text-sm">
+            Please wait while we redirect you to the login page.
+          </p>
         </div>
-        <div className="space-y-4">
-          <GoogleButton className="w-full" />
-          <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
-            <span className="bg-background text-muted-foreground relative z-10 px-2">
-              Or continue with
-            </span>
-          </div>
-          <Suspense fallback={<div>Loading...</div>}>
-            <AuthForm mode="signin" />
-          </Suspense>
+        <div className="flex justify-center">
+          <Loader2 className="animate-spin h-8 w-8" />
         </div>
       </div>
 

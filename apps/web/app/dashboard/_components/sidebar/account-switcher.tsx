@@ -18,7 +18,6 @@ import { cn, getInitials } from '@/lib/utils';
 import Link from 'next/link';
 import { adminRedirectPath } from '@/config/app-config';
 import { SidebarMenuButton } from '@/components/ui/sidebar';
-import { signOut } from '@/app/(login)/actions';
 import useSWR, { mutate } from 'swr';
 import { useRouter } from 'next/navigation';
 import { loginRedirectPath, logoutRedirectPath } from '@/config/app-config';
@@ -34,9 +33,9 @@ export function AccountSwitcher({
   const router = useRouter();
 
   async function handleSignOut() {
-    await signOut();
+    // Redirect to Auth0 logout
     mutate('/api/user');
-    router.push(logoutRedirectPath);
+    window.location.href = '/api/auth/logout';
   }
 
   return (

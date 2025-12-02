@@ -1,28 +1,30 @@
-import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/auth/session';
+import { getSession } from '@auth0/nextjs-auth0';
 import { db } from '../drizzle';
 import { users, teamMembers } from '../schema';
 import { eq, and, isNull } from 'drizzle-orm';
 
+/**
+ * Get the current authenticated user from Auth0 session.
+ * Maps Auth0 user to database user by email.
+ */
 export async function getUser() {
-  const sessionCookie = (await cookies()).get('session');
-  if (!sessionCookie || !sessionCookie.value) {
+  const session = await getSession();
+
+  if (!session || !session.user) {
     return null;
   }
 
-  const sessionData = await verifyToken(sessionCookie.value);
-  if (!sessionData || !sessionData.user || typeof sessionData.user.id !== 'number') {
+  // Auth0 user object contains email
+  const email = session.user.email;
+  if (!email) {
     return null;
   }
 
-  if (new Date(sessionData.expires) < new Date()) {
-    return null;
-  }
-
+  // Find user in database by email from Auth0
   const user = await db
     .select()
     .from(users)
-    .where(and(eq(users.id, sessionData.user.id), isNull(users.deletedAt)))
+    .where(and(eq(users.email, email), isNull(users.deletedAt)))
     .limit(1);
 
   if (user.length === 0) {

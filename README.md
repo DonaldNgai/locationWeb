@@ -2,6 +2,8 @@
 
 This is a starter template for building a SaaS application using **Next.js** with support for authentication, Stripe integration for payments, and a dashboard for logged-in users.
 
+**⚠️ Authentication Update**: This application has been migrated to use **Auth0** for authentication. See `apps/web/AUTH0_SUMMARY.md` and `apps/web/AUTH0_MIGRATION.md` for details.
+
 **Demo: [https://next-saas-start.vercel.app/](https://next-saas-start.vercel.app/)**
 
 ## Features
@@ -11,7 +13,7 @@ This is a starter template for building a SaaS application using **Next.js** wit
 - Dashboard pages with CRUD operations on users/teams
 - Basic RBAC with Owner and Member roles
 - Subscription management with Stripe Customer Portal
-- Email/password authentication with JWTs stored to cookies
+- Authentication via Auth0 (OAuth, social login, MFA support)
 - Global middleware to protect logged-in routes
 - Local middleware to protect Server Actions or validate Zod schemas
 - Activity logging system for any user events

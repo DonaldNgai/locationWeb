@@ -13,7 +13,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { signOut } from '@/app/(login)/actions';
 import { useRouter } from 'next/navigation';
 import { User } from '@/lib/db/schema';
 import { adminRedirectPath, loginRedirectPath } from '@/config/app-config';
@@ -28,9 +27,9 @@ function UserMenu() {
   const router = useRouter();
 
   async function handleSignOut() {
-    await signOut();
+    // Redirect to Auth0 logout
     mutate('/api/user');
-    router.push(logoutRedirectPath);
+    window.location.href = '/api/auth/logout';
   }
 
   if (!user) {
