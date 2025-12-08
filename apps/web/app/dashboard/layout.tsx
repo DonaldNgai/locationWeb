@@ -29,6 +29,7 @@ import { AccountSwitcher } from './_components/sidebar/account-switcher';
 import { LayoutControls } from './_components/sidebar/layout-controls';
 import { SearchDialog } from './_components/sidebar/search-dialog';
 import { ThemeSwitcher } from './_components/sidebar/theme-switcher';
+import { RoleCheck } from './_components/role-check';
 import { getUser } from '@/lib/db/queries';
 
 export default async function Layout({ children }: Readonly<{ children: ReactNode }>) {
@@ -97,7 +98,10 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
               </div>
             </div>
           </header>
-          <div className="h-full p-4 md:p-6">{children}</div>
+          <div className="h-full p-4 md:p-6">
+            <RoleCheck />
+            {children}
+          </div>
         </SidebarInset>
       </SidebarProvider>
     </PreferencesStoreProvider>

@@ -2,21 +2,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { FadeIn, FadeInStagger, FadeInStaggerItem } from '@/components/ui/fade-in';
-import { ArrowRight, FileText, Zap, Clock } from 'lucide-react';
+import { ArrowRight, Code, Zap, Rocket, Terminal, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { WordDivider } from '@/components/ui/word-divider';
-
-const companyLogos = [
-  { name: 'CAT', url: 'https://logo.clearbit.com/caterpillar.com' },
-  { name: 'Volvo', url: 'https://logo.clearbit.com/volvo.com' },
-  { name: 'JCB', url: 'https://logo.clearbit.com/jcb.com' },
-  { name: 'Komatsu', url: 'https://logo.clearbit.com/komatsu.com' },
-  { name: 'Hitachi', url: 'https://logo.clearbit.com/hitachi.com' },
-  { name: 'John Deere', url: 'https://logo.clearbit.com/deere.com' },
-  { name: 'Case', url: 'https://logo.clearbit.com/casece.com' },
-  { name: 'Bobcat', url: 'https://logo.clearbit.com/bobcat.com' },
-];
 
 export default function HomePage() {
   return (
@@ -24,10 +13,10 @@ export default function HomePage() {
       {/* Subtle background image */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div
-          className="absolute inset-0 opacity-30"
+          className="absolute inset-0 opacity-20"
           style={{
             backgroundImage:
-              'url(https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=2029&auto=format&fit=crop)',
+              'url(https://images.unsplash.com/photo-1461749280684-dccba630e2f6?q=80&w=2069&auto=format&fit=crop)',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
@@ -37,83 +26,64 @@ export default function HomePage() {
       </div>
       {/* Hero Section */}
       <section className="relative py-20 lg:py-32 overflow-hidden z-10">
-        {/* Hero Image */}
-        <div className="absolute inset-0 -z-10 opacity-10">
-          <Image
-            src="https://images.unsplash.com/photo-1581094794329-c8112a89af12?q=80&w=2070&auto=format&fit=crop"
-            alt="Construction equipment"
-            fill
-            className="object-cover"
-            priority
-          />
-        </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <FadeInStagger className="text-center max-w-4xl mx-auto">
             <FadeInStaggerItem>
+              <div className="flex items-center justify-center gap-2 mb-6">
+                <Badge variant="outline" className="text-sm py-1 px-3 border-primary">
+                  <Code className="h-3 w-3 mr-1" />
+                  For Developers
+                </Badge>
+              </div>
+            </FadeInStaggerItem>
+            <FadeInStaggerItem>
               <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6">
-                Book Trucks & Equipment Fast
+                Location Tracking Backend
+                <br />
+                <span className="text-primary">Scaffolded by AI</span>
               </h1>
             </FadeInStaggerItem>
             <FadeInStaggerItem>
               <p className="text-xl md:text-2xl text-muted-foreground mb-8">
-                Pre-vetted and insured operators, fair pricing, and fast availability — all in one
-                place.
+                Get location tracking up and running in minutes, not weeks. No need to build an entire
+                tech stack just to track where your people are.
               </p>
             </FadeInStaggerItem>
             <FadeInStaggerItem>
               <div className="flex flex-wrap gap-3 justify-center mb-12">
                 <Badge variant="secondary" className="text-sm py-2 px-4">
-                  Fast Payments
+                  <Sparkles className="h-3 w-3 mr-1 inline" />
+                  AI-Powered
                 </Badge>
                 <Badge variant="secondary" className="text-sm py-2 px-4">
-                  Reliability
+                  <Zap className="h-3 w-3 mr-1 inline" />
+                  Quick Setup
                 </Badge>
                 <Badge variant="secondary" className="text-sm py-2 px-4">
-                  Seamless
+                  <Rocket className="h-3 w-3 mr-1 inline" />
+                  Production Ready
                 </Badge>
               </div>
             </FadeInStaggerItem>
             <FadeInStaggerItem>
               <p className="text-sm text-muted-foreground mb-8 pt-12">
-                Trusted by <span className="font-bold italic">500+</span> contractors and suppliers
+                Built for developers who need location tracking <span className="font-bold italic">fast</span>
               </p>
-            </FadeInStaggerItem>
-            <FadeInStaggerItem>
-              {/* Logo Ticker */}
-              <div className="relative overflow-hidden mb-12 ticker-fade">
-                <div className="flex animate-scroll-reverse">
-                  {[...companyLogos, ...companyLogos].map((logo, i) => (
-                    <div
-                      key={i}
-                      className="flex-shrink-0 mx-8 flex items-center justify-center w-32 h-16 bg-white/80 dark:bg-gray-800/80 rounded-lg backdrop-blur-sm p-3"
-                    >
-                      <Image
-                        src={logo.url}
-                        alt={logo.name}
-                        width={120}
-                        height={60}
-                        className="w-full h-full object-contain"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
             </FadeInStaggerItem>
           </FadeInStagger>
         </div>
       </section>
 
-      {/* More Revenue Section */}
+      {/* AI Scaffolding Section */}
       <section className="py-16 bg-muted/50 spotlight-blur relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <FadeIn>
             <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold mb-4">Faster Jobs, Less Hassle</h2>
+              <h2 className="text-4xl md:text-5xl font-bold mb-4">AI-Powered Scaffolding</h2>
               <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-                FleetLink is a private marketplace of +500 companies, connecting owner-operated
-                construction equipment to contractors. Every equipment supplier is pre-vetted to
-                ensure reliability and our proprietary tracking system ensures every contractor
-                receives the equipment they requested.
+                This location tracking backend was created so AI can help scaffold projects easily.
+                Get a complete, production-ready location tracking system without building databases,
+                APIs, authentication, or mapping infrastructure from scratch.
               </p>
             </div>
           </FadeIn>
@@ -123,12 +93,14 @@ export default function HomePage() {
               <Card className="h-full">
                 <CardHeader>
                   <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                    <FileText className="h-6 w-6" />
+                    <Sparkles className="h-6 w-6" />
                   </div>
-                  <CardTitle>Hassle-Free Rentals</CardTitle>
+                  <CardTitle>AI-Assisted Setup</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription>We handle coordination and paperwork</CardDescription>
+                  <CardDescription>
+                    Let AI help you scaffold and customize your location tracking project in minutes.
+                  </CardDescription>
                 </CardContent>
               </Card>
             </FadeInStaggerItem>
@@ -139,11 +111,12 @@ export default function HomePage() {
                   <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                     <Zap className="h-6 w-6" />
                   </div>
-                  <CardTitle>Reliable Equipment</CardTitle>
+                  <CardTitle>No Tech Stack Overhead</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <CardDescription>
-                    Every operator is pre-vetted for safety and reliability.
+                    Skip building databases, APIs, and infrastructure. Everything you need is already
+                    here.
                   </CardDescription>
                 </CardContent>
               </Card>
@@ -153,12 +126,14 @@ export default function HomePage() {
               <Card className="h-full">
                 <CardHeader>
                   <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                    <Clock className="h-6 w-6" />
+                    <Rocket className="h-6 w-6" />
                   </div>
-                  <CardTitle>Fast Booking</CardTitle>
+                  <CardTitle>Get Started in Minutes</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription>90% of requests are filled within 2 hours.</CardDescription>
+                  <CardDescription>
+                    Clone, configure, and deploy. Start tracking locations without weeks of setup.
+                  </CardDescription>
                 </CardContent>
               </Card>
             </FadeInStaggerItem>
@@ -166,65 +141,61 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Meeting You Section */}
+      {/* Easy Setup Section */}
       <section className="py-16 relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <FadeInStagger className="grid lg:grid-cols-2 gap-12 items-center">
             <FadeInStaggerItem>
               <div>
-                <h2 className="text-4xl md:text-5xl font-bold mb-6">Meeting you where you are</h2>
+                <h2 className="text-4xl md:text-5xl font-bold mb-6">
+                  Get Location Tracking Running Fast
+                </h2>
+                <p className="text-lg text-muted-foreground mb-4">
+                  You don't need to build an entire tech stack just to get the location of some people.
+                  This backend gives you everything you need: user management, location tracking, APIs,
+                  and a complete admin dashboard.
+                </p>
                 <p className="text-lg text-muted-foreground">
-                  Founded by construction company owners, we understand how you work. We meet you
-                  where you are. No complicated marketplace. So you can focus on the job at hand.
+                  Perfect for developers who need location tracking functionality without the weeks of
+                  infrastructure setup. Let AI help you scaffold and customize it to your needs.
                 </p>
               </div>
             </FadeInStaggerItem>
             <FadeInStaggerItem>
-              <div className="relative rounded-lg overflow-hidden aspect-video">
-                <Image
-                  src="https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?q=80&w=2070&auto=format&fit=crop"
-                  alt="Construction site meeting"
-                  fill
-                  className="object-cover"
-                />
+              <div className="relative rounded-lg overflow-hidden aspect-video bg-muted flex items-center justify-center">
+                <Terminal className="h-24 w-24 text-muted-foreground/50" />
               </div>
             </FadeInStaggerItem>
           </FadeInStagger>
         </div>
       </section>
 
-      {/* 500+ Companies Section */}
+      {/* What's Included Section */}
       <section className="py-16 bg-muted/50 relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <FadeInStagger className="grid lg:grid-cols-2 gap-12 items-center">
             <FadeInStaggerItem>
               <div className="order-2 lg:order-1">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="relative rounded-lg overflow-hidden aspect-square">
-                    <Image
-                      src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop"
-                      alt="Construction equipment fleet"
-                      fill
-                      className="object-cover"
-                    />
+                  <div className="relative rounded-lg overflow-hidden aspect-square bg-primary/10 flex items-center justify-center">
+                    <Code className="h-16 w-16 text-primary" />
                   </div>
-                  <div className="relative rounded-lg overflow-hidden aspect-square">
-                    <Image
-                      src="https://images.unsplash.com/photo-1590674899484-d5640e854abe?q=80&w=2074&auto=format&fit=crop"
-                      alt="Heavy machinery"
-                      fill
-                      className="object-cover"
-                    />
+                  <div className="relative rounded-lg overflow-hidden aspect-square bg-primary/10 flex items-center justify-center">
+                    <Terminal className="h-16 w-16 text-primary" />
                   </div>
                 </div>
               </div>
             </FadeInStaggerItem>
             <FadeInStaggerItem>
               <div className="order-1 lg:order-2">
-                <h2 className="text-4xl md:text-5xl font-bold mb-6">500+ In-Network Companies</h2>
+                <h2 className="text-4xl md:text-5xl font-bold mb-6">Everything You Need</h2>
+                <p className="text-lg text-muted-foreground mb-4">
+                  A complete location tracking backend with user management, authentication, APIs,
+                  database schemas, and admin dashboard—all ready to deploy.
+                </p>
                 <p className="text-lg text-muted-foreground">
-                  Exclusive Access to Our List of Contractors and Suppliers guarantee that you a
-                  500% increase in your revenue.
+                  No need to piece together multiple services or build infrastructure from scratch.
+                  Everything is included and ready for AI-assisted customization.
                 </p>
               </div>
             </FadeInStaggerItem>
@@ -232,17 +203,17 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Testimonials Section */}
+      {/* Developer Benefits Section */}
       <section className="py-16 relative spotlight-blur z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <FadeIn>
             <div className="text-center mb-16">
               <h2 className="text-4xl md:text-5xl font-bold mb-4">
-                Trusted by Industry Leaders, Loved by Contractors
+                Built for Developers, Powered by AI
               </h2>
               <p className="text-lg text-muted-foreground mb-12">
-                FleetLink's success is measured by our clients' results. Hear from equipment owners
-                and contractors who've transformed their operations.
+                This location tracking backend was designed from the ground up to be easily scaffolded
+                and customized with AI assistance. Get started in minutes, not weeks.
               </p>
             </div>
           </FadeIn>
@@ -251,32 +222,14 @@ export default function HomePage() {
             <FadeInStaggerItem>
               <Card>
                 <CardContent className="pt-6">
-                  <div className="flex gap-1 mb-4">
-                    {[...Array(5)].map((_, i) => (
-                      <span key={i} className="text-yellow-500">
-                        ★
-                      </span>
-                    ))}
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <Code className="h-6 w-6" />
                   </div>
-                  <p className="text-muted-foreground mb-6">
-                    "FleetLink completely transformed our operations. We got a last-minute rental
-                    request on a Friday afternoon, and within 90 minutes, they had us matched with
-                    the perfect excavator. Got paid within 48 hours instead of the usual 30+ days!"
+                  <h3 className="text-xl font-semibold mb-3">AI-Assisted Customization</h3>
+                  <p className="text-muted-foreground">
+                    Let AI help you scaffold and customize this backend to match your exact needs.
+                    The codebase is structured to make AI-assisted modifications easy and reliable.
                   </p>
-                  <div className="flex items-center gap-3">
-                    <div className="relative h-12 w-12 rounded-full overflow-hidden">
-                      <Image
-                        src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=2070&auto=format&fit=crop"
-                        alt="Mike Thompson"
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                    <div>
-                      <p className="font-semibold">Mike Thompson</p>
-                      <p className="text-sm text-muted-foreground">Thompson Equipment Rentals</p>
-                    </div>
-                  </div>
                 </CardContent>
               </Card>
             </FadeInStaggerItem>
@@ -284,32 +237,14 @@ export default function HomePage() {
             <FadeInStaggerItem>
               <Card>
                 <CardContent className="pt-6">
-                  <div className="flex gap-1 mb-4">
-                    {[...Array(5)].map((_, i) => (
-                      <span key={i} className="text-yellow-500">
-                        ★
-                      </span>
-                    ))}
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <Rocket className="h-6 w-6" />
                   </div>
-                  <p className="text-muted-foreground mb-6">
-                    "Before FleetLink, we'd wait weeks for payment and constantly chase down
-                    paperwork. Now? Equipment rented out in under 2 hours, payment in 4 days. Our
-                    cash flow has never been better. This platform is a game-changer."
+                  <h3 className="text-xl font-semibold mb-3">Skip the Infrastructure Setup</h3>
+                  <p className="text-muted-foreground">
+                    No need to build databases, set up authentication, create APIs, or configure
+                    mapping services. Everything is already here and ready to deploy.
                   </p>
-                  <div className="flex items-center gap-3">
-                    <div className="relative h-12 w-12 rounded-full overflow-hidden">
-                      <Image
-                        src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=2070&auto=format&fit=crop"
-                        alt="Jose Martinez"
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                    <div>
-                      <p className="font-semibold">Jose Martinez</p>
-                      <p className="text-sm text-muted-foreground">Total Construction Supply</p>
-                    </div>
-                  </div>
                 </CardContent>
               </Card>
             </FadeInStaggerItem>
@@ -321,23 +256,25 @@ export default function HomePage() {
       <section className="py-20 bg-muted/50 relative z-10">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <FadeIn>
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">Ready to Book Equipment?</h2>
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">Ready to Get Started?</h2>
             <p className="text-lg text-muted-foreground mb-8">
-              Get matched with a verified operator within 24 hours
+              Clone the repository and let AI help you scaffold your location tracking project. Get
+              up and running in minutes, not weeks.
             </p>
-            <Link href="/request">
-              <Button size="lg" className="text-lg cursor-pointer">
-                Book Equipment Now
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-            <WordDivider word="or" />
-            <Link href="/submit">
-              <Button size="lg" className="text-lg cursor-pointer">
-                Join as a Supplier
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/sign-in">
+                <Button size="lg" className="text-lg cursor-pointer w-full sm:w-auto">
+                  View Dashboard
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
+              <Link href="/sign-up">
+                <Button size="lg" variant="outline" className="text-lg cursor-pointer w-full sm:w-auto">
+                  Get Started
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
+            </div>
           </FadeIn>
         </div>
       </section>

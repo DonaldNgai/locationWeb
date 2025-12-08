@@ -12,7 +12,6 @@ import {
   ActivityType,
 } from '@/lib/db/schema';
 import { redirect } from 'next/navigation';
-import { cookies } from 'next/headers';
 import { getUserWithTeam } from '@/lib/db/queries';
 import { validatedActionWithUser } from '@/lib/auth/middleware';
 
@@ -35,33 +34,13 @@ async function logActivity(
 }
 
 /**
- * Update user password
- * Note: With Auth0, password management should be handled through Auth0's UI.
- * This function is kept for backwards compatibility but should be migrated to Auth0.
- */
-const updatePasswordSchema = z.object({
-  currentPassword: z.string().min(8).max(100),
-  newPassword: z.string().min(8).max(100),
-  confirmPassword: z.string().min(8).max(100),
-});
-
-export const updatePassword = validatedActionWithUser(
-  updatePasswordSchema,
-  async (data, _, user) => {
-    // TODO: With Auth0, this should redirect to Auth0's password change flow
-    // For now, return an error directing users to Auth0
-    return {
-      error:
-        'Password management is now handled through your Auth0 account. Please use the "Forgot Password" link on the login page.',
-    };
-  }
-);
-
-/**
  * Delete user account (soft delete)
+ * Note: Auth0 handles authentication, no password verification needed
  */
 const deleteAccountSchema = z.object({
-  password: z.string().min(1, 'Password confirmation required'),
+  confirmText: z.string().refine((val) => val === 'DELETE', {
+    message: 'Please type DELETE to confirm',
+  }),
 });
 
 export const deleteAccount = validatedActionWithUser(deleteAccountSchema, async (data, _, user) => {
@@ -69,15 +48,17 @@ export const deleteAccount = validatedActionWithUser(deleteAccountSchema, async 
 
   await logActivity(userWithTeam?.teamId, user.id, ActivityType.DELETE_ACCOUNT);
 
-  // Soft delete
+  // Soft delete - mark as deleted and append unique suffix to email
+  const timestamp = Date.now();
   await db
     .update(users)
     .set({
-      deletedAt: sql`CURRENT_TIMESTAMP`,
-      email: sql`CONCAT(email, '-', id, '-deleted')`, // Ensure email uniqueness
+      deletedAt: new Date(),
+      email: `${user.email}-${user.id}-${timestamp}-deleted`,
     })
     .where(eq(users.id, user.id));
 
+  // Remove from team
   if (userWithTeam?.teamId) {
     await db
       .delete(teamMembers)
