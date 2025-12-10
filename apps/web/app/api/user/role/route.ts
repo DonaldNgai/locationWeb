@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { getSession } from '@auth0/nextjs-auth0';
+import { auth0 } from '@repo/api/auth/getAuth0Client';
 import { db } from '@/lib/db/drizzle';
 import { users } from '@/lib/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
 
 export async function POST(request: Request) {
   try {
-    const session = await getSession();
+    const session = await auth0.getSession();
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

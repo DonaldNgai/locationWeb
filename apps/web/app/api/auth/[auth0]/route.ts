@@ -1,4 +1,4 @@
-import { handleAuth } from '@auth0/nextjs-auth0';
+import { auth0 } from '@repo/api/auth/getAuth0Client';
 
 /**
  * Auth0 API route handler.
@@ -8,4 +8,4 @@ import { handleAuth } from '@auth0/nextjs-auth0';
  * - /api/auth/callback - OAuth callback
  * - /api/auth/me - Returns user profile
  */
-export const GET = handleAuth();
+export const GET = auth0.handleAuth();

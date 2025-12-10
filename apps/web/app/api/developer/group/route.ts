@@ -1,16 +1,16 @@
 import { NextResponse } from 'next/server';
-import { getSession, getAccessToken } from '@auth0/nextjs-auth0';
+import { auth0 } from '@repo/api/auth/getAuth0Client';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3333';
 
 export async function GET() {
   try {
-    const session = await getSession();
+    const session = await auth0.getSession();
     if (!session?.user?.sub) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { accessToken } = await getAccessToken();
+    const accessToken = await auth0.getAccessToken();
     if (!accessToken) {
       return NextResponse.json({ error: 'Failed to get access token' }, { status: 401 });
     }
@@ -41,12 +41,12 @@ export async function GET() {
 
 export async function POST() {
   try {
-    const session = await getSession();
+    const session = await auth0.getSession();
     if (!session?.user?.sub) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { accessToken } = await getAccessToken();
+    const accessToken = await auth0.getAccessToken();
     if (!accessToken) {
       return NextResponse.json({ error: 'Failed to get access token' }, { status: 401 });
     }
@@ -78,7 +78,7 @@ export async function POST() {
 
 export async function PATCH(request: Request) {
   try {
-    const session = await getSession();
+    const session = await auth0.getSession();
     if (!session?.user?.sub) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -90,7 +90,7 @@ export async function PATCH(request: Request) {
     // In a full implementation, you'd store locationRequestFrequency and locationRequestMessage
     // in a separate settings table or as metadata on the group
 
-    const { accessToken } = await getAccessToken();
+    const accessToken = await auth0.getAccessToken();
     if (!accessToken) {
       return NextResponse.json({ error: 'Failed to get access token' }, { status: 401 });
     }

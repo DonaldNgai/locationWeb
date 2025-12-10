@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "esModuleInterop": true,
+    "jsx": "react-jsx",
+    "typeRoots": ["./node_modules/@types"],
+    "rootDir": "./",
+    "outDir": "dist",
+    "declaration": true,
+    "declarationMap": true
+  }
+}

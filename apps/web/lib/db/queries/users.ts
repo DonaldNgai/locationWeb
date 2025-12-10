@@ -1,4 +1,4 @@
-import { getSession } from '@auth0/nextjs-auth0';
+import { auth0 } from '@repo/api/auth/getAuth0Client';
 import { db } from '../drizzle';
 import { users, teamMembers } from '../schema';
 import { eq, and, isNull } from 'drizzle-orm';
@@ -8,7 +8,7 @@ import { eq, and, isNull } from 'drizzle-orm';
  * Maps Auth0 user to database user by email.
  */
 export async function getUser() {
-  const session = await getSession();
+  const session = await auth0.getSession();
 
   if (!session || !session.user) {
     return null;
