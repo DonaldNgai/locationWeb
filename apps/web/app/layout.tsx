@@ -1,7 +1,7 @@
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import { Manrope } from 'next/font/google';
-import { UserProvider } from '@auth0/nextjs-auth0/client';
+import { Auth0Provider } from "@auth0/nextjs-auth0/client";
 import { getUser, getTeamForUser } from '@/lib/db/queries';
 import { SWRConfig } from 'swr';
 import { APP_CONFIG } from '@/config/app-config';
@@ -24,7 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`bg-white dark:bg-gray-950 text-black dark:text-white ${manrope.className}`}
     >
       <body className="min-h-[100dvh]">
-        <UserProvider>
+        <Auth0Provider>
           <SWRConfig
             value={{
               fallback: {
@@ -37,7 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           >
             {children}
           </SWRConfig>
-        </UserProvider>
+        </Auth0Provider>
       </body>
     </html>
   );

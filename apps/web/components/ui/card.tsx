@@ -1,81 +1,99 @@
 import * as React from "react";
+import {
+  Box,
+  Card as ChakraCard,
+  CardHeader as ChakraCardHeader,
+  CardBody as ChakraCardBody,
+  CardFooter as ChakraCardFooter,
+  Heading,
+  Text,
+  type BoxProps,
+} from "@chakra-ui/react";
 
-import { cn } from "@/lib/utils";
-
-function Card({ className, ...props }: React.ComponentProps<"div">) {
+function Card({ className, ...props }: BoxProps) {
   return (
-    <div
+    <ChakraCard
       data-slot="card"
-      className={cn(
-        "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm",
-        className
-      )}
+      className={className}
+      borderRadius="xl"
+      py={6}
+      gap={6}
       {...props}
     />
   );
 }
 
-function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
+function CardHeader({ className, ...props }: BoxProps) {
   return (
-    <div
+    <ChakraCardHeader
       data-slot="card-header"
-      className={cn(
-        "@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6",
-        className
-      )}
+      className={className}
+      px={6}
       {...props}
     />
   );
 }
 
-function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
+function CardTitle({ className, ...props }: BoxProps) {
   return (
-    <div
+    <Heading
       data-slot="card-title"
-      className={cn("leading-none font-semibold", className)}
+      className={className}
+      size="md"
+      fontWeight="semibold"
+      lineHeight="none"
       {...props}
     />
   );
 }
 
-function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
+function CardDescription({ className, ...props }: BoxProps) {
   return (
-    <div
+    <Text
       data-slot="card-description"
-      className={cn("text-muted-foreground text-sm", className)}
+      className={className}
+      fontSize="sm"
+      color="gray.500"
+      _dark={{ color: "gray.400" }}
       {...props}
     />
   );
 }
 
-function CardAction({ className, ...props }: React.ComponentProps<"div">) {
+function CardAction({ className, ...props }: BoxProps) {
   return (
-    <div
+    <Box
       data-slot="card-action"
-      className={cn(
-        "col-start-2 row-span-2 row-start-1 self-start justify-self-end",
-        className
-      )}
+      className={className}
+      gridColumnStart={2}
+      gridRowSpan={2}
+      gridRowStart={1}
+      alignSelf="start"
+      justifySelf="end"
       {...props}
     />
   );
 }
 
-function CardContent({ className, ...props }: React.ComponentProps<"div">) {
+function CardContent({ className, ...props }: BoxProps) {
   return (
-    <div
+    <ChakraCardBody
       data-slot="card-content"
-      className={cn("px-6", className)}
+      className={className}
+      px={6}
+      pt={0}
       {...props}
     />
   );
 }
 
-function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
+function CardFooter({ className, ...props }: BoxProps) {
   return (
-    <div
+    <ChakraCardFooter
       data-slot="card-footer"
-      className={cn("flex items-center px-6 [.border-t]:pt-6", className)}
+      className={className}
+      px={6}
+      pt={6}
       {...props}
     />
   );

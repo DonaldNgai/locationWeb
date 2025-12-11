@@ -1,6 +1,7 @@
 'use client';
 
 import Script from 'next/script';
+import { Box } from '@chakra-ui/react';
 
 interface JotFormProps {
   formId: string;
@@ -21,24 +22,25 @@ export function JotForm({ formId, title = 'Form', urlParams, height = '85vh' }: 
 
   return (
     <>
-      <div className="@container/main h-full min-h-[80vh]">
-        <div className="w-full h-full">
-          <iframe
+      <Box className="@container/main" h="full" minH="80vh">
+        <Box w="full" h="full">
+          <Box
+            as="iframe"
             id={iframeId}
             title={title}
             onLoad={() => window.parent.scrollTo(0, 0)}
-            allow="geolocation; microphone; camera; fullscreen; payment"
-            src={formUrl}
-            frameBorder={0}
-            style={{
-              width: '100%',
-              height,
-              border: 'none',
-            }}
-            scrolling="auto"
+            w="100%"
+            h={height}
+            border="none"
+            {...({
+              allow: 'geolocation; microphone; camera; fullscreen; payment',
+              frameBorder: 0,
+              scrolling: 'auto',
+              src: formUrl,
+            } as any)}
           />
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       <Script src="https://cdn.jotfor.ms/s/umd/latest/for-form-embed-handler.js" />
       <Script id={scriptId}>

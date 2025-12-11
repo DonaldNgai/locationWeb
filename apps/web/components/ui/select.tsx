@@ -1,27 +1,24 @@
 "use client"
 
 import * as React from "react"
-import { Select as SelectPrimitive } from "radix-ui"
-import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react"
-
-import { cn } from "@/lib/utils"
+import {
+  Select as ChakraSelect,
+  type SelectProps,
+} from "@chakra-ui/react"
 
 function Select({
   ...props
-}: React.ComponentProps<typeof SelectPrimitive.Root>) {
-  return <SelectPrimitive.Root data-slot="select" {...props} />
+}: SelectProps) {
+  return <ChakraSelect data-slot="select" {...props} />
 }
 
-function SelectGroup({
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Group>) {
-  return <SelectPrimitive.Group data-slot="select-group" {...props} />
+// For backward compatibility
+function SelectGroup({ children, ...props }: React.ComponentProps<"optgroup">) {
+  return <optgroup data-slot="select-group" {...props}>{children}</optgroup>
 }
 
-function SelectValue({
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Value>) {
-  return <SelectPrimitive.Value data-slot="select-value" {...props} />
+function SelectValue({ children, ...props }: React.ComponentProps<"span">) {
+  return <span data-slot="select-value" {...props}>{children}</span>
 }
 
 function SelectTrigger({

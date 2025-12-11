@@ -1,15 +1,45 @@
 "use client"
 
 import * as React from "react"
-import { AlertDialog as AlertDialogPrimitive } from "radix-ui"
+import {
+  AlertDialog as ChakraAlertDialog,
+  AlertDialogBody,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogContent,
+  AlertDialogOverlay,
+  type UseDisclosureReturn,
+} from "@chakra-ui/react"
+import { useDisclosure } from "@chakra-ui/react"
 
-import { cn } from "@/lib/utils"
-import { buttonVariants } from "@/components/ui/button"
-
+// For backward compatibility
 function AlertDialog({
+  open,
+  onOpenChange,
+  children,
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Root>) {
-  return <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />
+}: {
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  children: React.ReactNode
+}) {
+  const disclosure = useDisclosure({
+    isOpen: open,
+    onOpen: () => onOpenChange?.(true),
+    onClose: () => onOpenChange?.(false),
+  })
+
+  return (
+    <ChakraAlertDialog
+      data-slot="alert-dialog"
+      isOpen={disclosure.isOpen}
+      onClose={disclosure.onClose}
+      leastDestructiveRef={undefined}
+      {...props}
+    >
+      {children}
+    </ChakraAlertDialog>
+  )
 }
 
 function AlertDialogTrigger({

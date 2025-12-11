@@ -1,21 +1,23 @@
 "use client";
 
 import * as React from "react";
-import { Avatar as AvatarPrimitive } from "radix-ui";;
-
-import { cn } from "@/lib/utils";
+import {
+  Avatar as ChakraAvatar,
+  AvatarImage as ChakraAvatarImage,
+  AvatarBadge as ChakraAvatarBadge,
+  type AvatarProps,
+  type AvatarImageProps,
+} from "@chakra-ui/react";
 
 function Avatar({
   className,
   ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Root>) {
+}: AvatarProps) {
   return (
-    <AvatarPrimitive.Root
+    <ChakraAvatar
       data-slot="avatar"
-      className={cn(
-        "relative flex size-8 shrink-0 overflow-hidden rounded-full",
-        className
-      )}
+      className={className}
+      size="md"
       {...props}
     />
   );
@@ -24,11 +26,11 @@ function Avatar({
 function AvatarImage({
   className,
   ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Image>) {
+}: AvatarImageProps) {
   return (
-    <AvatarPrimitive.Image
+    <ChakraAvatarImage
       data-slot="avatar-image"
-      className={cn("aspect-square size-full", className)}
+      className={className}
       {...props}
     />
   );
@@ -36,17 +38,17 @@ function AvatarImage({
 
 function AvatarFallback({
   className,
+  children,
   ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Fallback>) {
+}: React.ComponentProps<"div">) {
   return (
-    <AvatarPrimitive.Fallback
+    <div
       data-slot="avatar-fallback"
-      className={cn(
-        "bg-muted flex size-full items-center justify-center rounded-full",
-        className
-      )}
+      className={className}
       {...props}
-    />
+    >
+      {children}
+    </div>
   );
 }
 

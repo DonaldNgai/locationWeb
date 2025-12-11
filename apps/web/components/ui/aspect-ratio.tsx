@@ -1,11 +1,11 @@
 "use client"
 
-import { AspectRatio as AspectRatioPrimitive } from "radix-ui"
+import { AspectRatio as ChakraAspectRatio, type AspectRatioProps } from "@chakra-ui/react"
 
 function AspectRatio({
   ...props
-}: React.ComponentProps<typeof AspectRatioPrimitive.Root>) {
-  return <AspectRatioPrimitive.Root data-slot="aspect-ratio" {...props} />
+}: AspectRatioProps) {
+  return <ChakraAspectRatio data-slot="aspect-ratio" {...props} />
 }
 
 export { AspectRatio }

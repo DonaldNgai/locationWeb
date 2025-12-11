@@ -1,32 +1,58 @@
 "use client"
 
-import { Collapsible as CollapsiblePrimitive } from "radix-ui"
+import {
+  Collapse as ChakraCollapse,
+  useDisclosure,
+  type CollapseProps,
+} from "@chakra-ui/react"
+import * as React from "react"
 
 function Collapsible({
+  open,
+  onOpenChange,
+  children,
   ...props
-}: React.ComponentProps<typeof CollapsiblePrimitive.Root>) {
-  return <CollapsiblePrimitive.Root data-slot="collapsible" {...props} />
+}: {
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  children: React.ReactNode
+} & Omit<CollapseProps, "in">) {
+  const disclosure = useDisclosure({
+    isOpen: open,
+    onOpen: () => onOpenChange?.(true),
+    onClose: () => onOpenChange?.(false),
+  })
+
+  return (
+    <ChakraCollapse
+      data-slot="collapsible"
+      in={disclosure.isOpen}
+      {...props}
+    >
+      {children}
+    </ChakraCollapse>
+  )
 }
 
 function CollapsibleTrigger({
+  children,
   ...props
-}: React.ComponentProps<typeof CollapsiblePrimitive.CollapsibleTrigger>) {
+}: React.ComponentProps<"button">) {
   return (
-    <CollapsiblePrimitive.CollapsibleTrigger
-      data-slot="collapsible-trigger"
-      {...props}
-    />
+    <button data-slot="collapsible-trigger" {...props}>
+      {children}
+    </button>
   )
 }
 
 function CollapsibleContent({
+  children,
   ...props
-}: React.ComponentProps<typeof CollapsiblePrimitive.CollapsibleContent>) {
+}: React.ComponentProps<"div">) {
   return (
-    <CollapsiblePrimitive.CollapsibleContent
-      data-slot="collapsible-content"
-      {...props}
-    />
+    <div data-slot="collapsible-content" {...props}>
+      {children}
+    </div>
   )
 }
 
