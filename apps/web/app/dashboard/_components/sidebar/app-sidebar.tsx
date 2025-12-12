@@ -12,11 +12,11 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from '@/components/ui/sidebar';
+} from '@repo/ui/sidebar';
 import { APP_CONFIG } from '@/config/app-config';
 import { User } from '@/lib/db/schema';
 import useSWR from 'swr';
-import { sidebarItems } from '@/components/ui/sidebar/sidebar-items';
+import { sidebarItems } from '@repo/ui/sidebar/sidebar-items';
 
 import { NavMain } from './nav-main';
 import { NavUser } from './nav-user';

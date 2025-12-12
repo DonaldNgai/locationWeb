@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth0 } from '@repo/api/auth/getAuth0Client';
+import { auth0 } from '@repo/next-utils/auth/getAuth0Client';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3333';
 

@@ -5,23 +5,23 @@ import * as React from 'react';
 import { Plus } from 'lucide-react';
 import { z } from 'zod';
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
+import { Badge } from '@repo/ui/badge';
+import { Button } from '@repo/ui/button';
+import { Label } from '@repo/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+} from '@repo/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/tabs';
 import { useDataTableInstance } from '@/lib/hooks/use-data-table-instance';
 
-import { DataTable as DataTableNew } from '@/components/ui/data-table/data-table';
-import { DataTablePagination } from '@/components/ui/data-table/data-table-pagination';
-import { DataTableViewOptions } from '@/components/ui/data-table/data-table-view-options';
-import { withDndColumn } from '@/components/ui/data-table/table-utils';
+import { DataTable as DataTableNew } from '@repo/ui/data-table/data-table';
+import { DataTablePagination } from '@repo/ui/data-table/data-table-pagination';
+import { DataTableViewOptions } from '@repo/ui/data-table/data-table-view-options';
+import { withDndColumn } from '@repo/ui/data-table/table-utils';
 
 import { dashboardColumns } from './columns';
 import { BookingWithSupply } from './schema';

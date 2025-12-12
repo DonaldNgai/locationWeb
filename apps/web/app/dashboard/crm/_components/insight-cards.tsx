@@ -12,14 +12,14 @@ import {
   YAxis,
 } from 'recharts';
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@repo/ui/button';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@repo/ui/card';
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
   ChartLegend,
-} from '@/components/ui/chart';
+} from '@repo/ui/chart';
 
 import {
   leadsBySourceChartData,

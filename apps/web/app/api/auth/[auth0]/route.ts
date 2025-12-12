@@ -1,4 +1,4 @@
-import { auth0 } from '@repo/api/auth/getAuth0Client';
+import { auth0 } from '@repo/next-utils/auth/getAuth0Client';
 
 /**
  * Auth0 API route handler.

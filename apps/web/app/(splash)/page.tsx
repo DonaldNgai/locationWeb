@@ -1,11 +1,11 @@
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { FadeIn, FadeInStagger, FadeInStaggerItem } from '@/components/ui/fade-in';
+import { Button } from '@repo/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo/ui/card';
+import { Badge } from '@repo/ui/badge';
+import { FadeIn, FadeInStagger, FadeInStaggerItem } from '@repo/ui/fade-in';
 import { ArrowRight, Code, Zap, Rocket, Terminal, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { WordDivider } from '@/components/ui/word-divider';
+import { WordDivider } from '@repo/ui/word-divider';
 
 export default function HomePage() {
   return (

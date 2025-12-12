@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server';
-import { auth0 } from '@repo/api/auth/getAuth0Client';
+import { auth0 } from '@repo/next-utils/auth/getAuth0Client';
 
 export async function middleware(request: NextRequest) {
   return await auth0.middleware(request);

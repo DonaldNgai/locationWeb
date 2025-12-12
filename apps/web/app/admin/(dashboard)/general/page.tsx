@@ -1,10 +1,10 @@
 'use client';
 
 import { useActionState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
+import { Button } from '@repo/ui/button';
+import { Input } from '@repo/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@repo/ui/card';
+import { Label } from '@repo/ui/label';
 import { Loader2 } from 'lucide-react';
 import { updateAccount } from '@/lib/actions/user-management';
 import { User } from '@/lib/db/schema';

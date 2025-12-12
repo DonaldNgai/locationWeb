@@ -1,4 +1,4 @@
-import { JotForm } from '@/components/ui/jotform';
+import { JotForm } from '@repo/ui/jotform';
 import { getUser } from '@/lib/db/queries';
 import { getCustomerForCurrentUser } from '@/lib/db/queries/customer';
 

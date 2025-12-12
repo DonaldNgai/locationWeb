@@ -11,22 +11,22 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from '@repo/ui/card';
 import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from '@/components/ui/chart';
+} from '@repo/ui/chart';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { useIsMobile } from '@/lib/hooks/use-mobile';
+} from '@repo/ui/select';
+import { ToggleGroup, ToggleGroupItem } from '@repo/ui/toggle-group';
+import { useIsMobile } from '@repo/next-utils/hooks/use-mobile';
 
 export const description = 'An interactive area chart';
 

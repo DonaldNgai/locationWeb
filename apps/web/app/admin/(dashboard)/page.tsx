@@ -1,17 +1,17 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Button } from '@repo/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui/avatar';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@repo/ui/card';
 import { customerPortalAction } from '@/lib/payments/actions';
 import { useActionState } from 'react';
 import { TeamDataWithMembers, User } from '@/lib/db/schema';
 import { removeTeamMember, inviteTeamMember } from '@/lib/actions/user-management';
 import useSWR from 'swr';
 import { Suspense } from 'react';
-import { Input } from '@/components/ui/input';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
+import { Input } from '@repo/ui/input';
+import { RadioGroup, RadioGroupItem } from '@repo/ui/radio-group';
+import { Label } from '@repo/ui/label';
 import { Loader2, PlusCircle } from 'lucide-react';
 
 type ActionState = {

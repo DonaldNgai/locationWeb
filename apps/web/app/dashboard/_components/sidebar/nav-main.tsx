@@ -5,14 +5,14 @@ import { usePathname } from 'next/navigation';
 
 import { PlusCircleIcon, MailIcon, ChevronRight } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Button } from '@repo/ui/button';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@repo/ui/collapsible';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '@repo/ui/dropdown-menu';
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -24,8 +24,8 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   useSidebar,
-} from '@/components/ui/sidebar';
-import { type NavGroup, type NavMainItem } from '@/components/ui/sidebar/sidebar-items';
+} from '@repo/ui/sidebar';
+import { type NavGroup, type NavMainItem } from '@repo/ui/sidebar/sidebar-items';
 import { loginRedirectPath } from '@/config/app-config';
 
 interface NavMainProps {

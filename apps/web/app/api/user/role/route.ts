@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth0 } from '@repo/api/auth/getAuth0Client';
+import { auth0 } from '@repo/next-utils/auth/getAuth0Client';
 import { db } from '@/lib/db/drizzle';
 import { users } from '@/lib/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';

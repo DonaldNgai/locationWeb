@@ -29,6 +29,18 @@
       ],
       "@repo/api/*": [
         "../../packages/api/*"
+      ],
+      "@repo/ui": [
+        "../../packages/ui/src"
+      ],
+      "@repo/ui/*": [
+        "../../packages/ui/src/*"
+      ],
+      "@repo/next-utils": [
+        "../../packages/next-utils/src"
+      ],
+      "@repo/next-utils/*": [
+        "../../packages/next-utils/src/*"
       ]
     }
   },

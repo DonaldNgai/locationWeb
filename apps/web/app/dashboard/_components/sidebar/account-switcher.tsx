@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { User as UserIcon, Home, LogOut, EllipsisVertical } from 'lucide-react';
 import { User } from '@/lib/db/schema';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,11 +13,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   DropdownMenuGroup,
-} from '@/components/ui/dropdown-menu';
-import { cn, getInitials } from '@/lib/utils';
+} from '@repo/ui/dropdown-menu';
+import { cn, getInitials } from '@repo/next-utils';
 import Link from 'next/link';
 import { adminRedirectPath } from '@/config/app-config';
-import { SidebarMenuButton } from '@/components/ui/sidebar';
+import { SidebarMenuButton } from '@repo/ui/sidebar';
 import useSWR, { mutate } from 'swr';
 import { useRouter } from 'next/navigation';
 import { loginRedirectPath, logoutRedirectPath } from '@/config/app-config';
