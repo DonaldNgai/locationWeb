@@ -27,9 +27,6 @@
       "@/*": [
         "./*"
       ],
-      "@repo/api/*": [
-        "../../packages/api/*"
-      ],
       "@repo/ui": [
         "../../packages/ui/src"
       ],
