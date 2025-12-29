@@ -9,11 +9,11 @@
     "lint": "turbo lint",
     "test": "turbo test",
     "format": "turbo format",
-    "db:generate": "prisma generate",
-    "db:push": "prisma db push",
-    "db:migrate": "prisma migrate dev",
-    "db:studio": "prisma studio",
-    "db:pull": "prisma db pull"
+    "db:generate": "prisma generate --schema=db/schema.prisma",
+    "db:push": "prisma db push --schema=db/schema.prisma",
+    "db:migrate": "prisma migrate dev --schema=db/schema.prisma",
+    "db:studio": "prisma studio --schema=db/schema.prisma",
+    "db:pull": "prisma db pull --schema=db/schema.prisma"
   },
   "dependencies": {
     "@prisma/client": "^5.20.0",

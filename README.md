@@ -118,6 +118,9 @@ To Setup
     add submodules to tsconfig.json - 
       "@DonaldNgai/next-utils/*": ["./packages/next-utils/src/*"],
       "@DonaldNgai/chakra-ui/*": ["./packages/ui/src/*"]
+    add packages to be transpiled to next.config.ts
+          transpilePackages: ['@DonaldNgai/next-utils', '@DonaldNgai/chakra-ui'],
+
 1. Setup Auth0
     Add lib/auth
     Add middleware
@@ -127,6 +130,8 @@ To Setup
     Install Prisma and Prisma Client
     Add db/prisma.ts
     Add Env POSTGRES_URL="postgresql://postgres:postgres@localhost:54322/postgres?schema=public"
+    run pnpm db:generate
+    run pnpm db:push
 
 3. Setup Stripe
     Add api/stripe/webhooks to handle webhooks being called
