@@ -27,18 +27,8 @@
       "@/*": [
         "./*"
       ],
-      "@repo/ui": [
-        "../../packages/ui/src"
-      ],
-      "@repo/ui/*": [
-        "../../packages/ui/src/*"
-      ],
-      "@repo/next-utils": [
-        "../../packages/next-utils/src"
-      ],
-      "@repo/next-utils/*": [
-        "../../packages/next-utils/src/*"
-      ]
+      "@DonaldNgai/next-utils/*": ["./packages/next-utils/src/*"],
+      "@DonaldNgai/chakra-ui/*": ["./packages/ui/src/*"]
     }
   },
   "include": [

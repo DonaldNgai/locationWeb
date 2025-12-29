@@ -9,8 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@repo/api": "workspace:*",
-    "@repo/ui": "workspace:*",
+    "@DonaldNgai/next-utils": "workspace:*",
+    "@DonaldNgai/chakra-ui": "workspace:*",
     "@auth0/nextjs-auth0": "^4.13.2",
     "next": "^15.4.0-canary.47",
     "react": "^19.1.0",

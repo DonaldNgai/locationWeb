@@ -16,9 +16,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
-      "@repo/next-utils/*": ["../../packages/api/*"],
-      "@repo/ui": ["../../packages/ui/src"],
-      "@repo/ui/*": ["../../packages/ui/src/*"]
+      "@DonaldNgai/next-utils/*": ["./packages/next-utils/src/*"],
+      "@DonaldNgai/chakra-ui/*": ["./packages/ui/src/*"]
     },
     "plugins": [
       {

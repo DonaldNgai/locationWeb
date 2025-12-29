@@ -1,8 +1,9 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest, FastifySchema } from "fastify";
 import { nanoid } from "nanoid";
 import { z } from "zod";
-import { db } from "../db/client.js";
-import { locations } from "../db/schema.js";
+// Drizzle removed - database operations disabled
+// import { db } from "../db/client.js";
+// import { locations } from "../db/schema.js";
 import { locationBus } from "../services/bus.js";
 import { requireApiKey } from "../utils/api-key.js";
 
@@ -61,7 +62,9 @@ export async function registerLocationRoutes(app: FastifyInstance) {
         receivedAt: new Date(),
       };
 
-      const [record] = await db.insert(locations).values(payload).returning();
+      // Database operations disabled - drizzle removed
+      // const [record] = await db.insert(locations).values(payload).returning();
+      const record = { id: payload.id, receivedAt: payload.receivedAt };
 
       locationBus.publishLocation(apiKey.groupId, {
         deviceId: body.deviceId,

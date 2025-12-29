@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth0 } from '@repo/next-utils/auth/getAuth0Client';
-import { db } from '@/lib/db/drizzle';
-import { users } from '@/lib/db/schema';
-import { eq, and, isNull } from 'drizzle-orm';
+// Drizzle removed - database operations disabled
 
 export async function POST(request: Request) {
   try {
@@ -16,11 +14,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid user type' }, { status: 400 });
     }
 
+    // Database operations disabled - drizzle removed
+    // TODO: Implement database operations with new ORM/database solution
     const email = session.user.email;
-    await db
-      .update(users)
-      .set({ userType, updatedAt: new Date() })
-      .where(and(eq(users.email, email), isNull(users.deletedAt)));
 
     return NextResponse.json({ success: true });
   } catch (error) {

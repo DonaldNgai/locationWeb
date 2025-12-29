@@ -1,8 +1,9 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { and, eq } from "drizzle-orm";
+// Drizzle removed - database operations disabled
+// import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import { db } from "../db/client.js";
-import { apiKeys, groups } from "../db/schema.js";
+// import { db } from "../db/client.js";
+// import { apiKeys, groups } from "../db/schema.js";
 import { createApiKey } from "../services/api-keys.js";
 import { requireAuth } from "../utils/auth.js";
 
@@ -33,10 +34,9 @@ export async function registerApiKeyRoutes(app: FastifyInstance) {
       const body = request.body as { label: string };
 
       const ownerId = auth.sub ?? "anonymous";
-      const [group] = await db
-        .select()
-        .from(groups)
-        .where(and(eq(groups.id, groupId), eq(groups.ownerId, ownerId)));
+      // Database operations disabled - drizzle removed
+      // const [group] = await db.select().from(groups).where(and(eq(groups.id, groupId), eq(groups.ownerId, ownerId)));
+      const group = null; // TODO: Implement database operations with new ORM/database solution
 
       if (!group) {
         reply.code(404);
@@ -65,19 +65,19 @@ export async function registerApiKeyRoutes(app: FastifyInstance) {
       const { groupId } = request.params as { groupId: string };
       const ownerId = auth.sub ?? "anonymous";
 
-      const [group] = await db
-        .select()
-        .from(groups)
-        .where(and(eq(groups.id, groupId), eq(groups.ownerId, ownerId)));
+      // Database operations disabled - drizzle removed
+      // const [group] = await db.select().from(groups).where(and(eq(groups.id, groupId), eq(groups.ownerId, ownerId)));
+      const group = null; // TODO: Implement database operations with new ORM/database solution
 
       if (!group) {
         reply.code(404);
         throw new Error("Group not found");
       }
 
-      const rows = await db.select().from(apiKeys).where(eq(apiKeys.groupId, group.id));
+      // const rows = await db.select().from(apiKeys).where(eq(apiKeys.groupId, group.id));
+      const rows: any[] = [];
       reply.send({
-        items: rows.map((row: typeof apiKeys.$inferSelect) => ({
+        items: rows.map((row: any) => ({
           id: row.id,
           label: row.label,
           createdAt: row.createdAt?.toISOString() ?? new Date().toISOString(),

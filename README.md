@@ -22,7 +22,6 @@ This is a starter template for building a SaaS application using **Next.js** wit
 
 - **Framework**: [Next.js](https://nextjs.org/)
 - **Database**: [Postgres](https://www.postgresql.org/)
-- **ORM**: [Drizzle](https://orm.drizzle.team/)
 - **Payments**: [Stripe](https://stripe.com/)
 - **UI Library**: [shadcn/ui](https://ui.shadcn.com/)
 
@@ -48,19 +47,7 @@ Use the included setup script to create your `.env` file:
 pnpm db:setup
 ```
 
-Run the database migrations and seed the database with a default user and team:
-
-```bash
-pnpm db:migrate
-pnpm db:seed
-```
-
-This will create the following user and team:
-
-- User: `test@test.com`
-- Password: `admin123`
-
-You can also create new users through the `/sign-up` route.
+You can create new users through the `/sign-up` route.
 
 Finally, run the Next.js development server:
 
@@ -119,3 +106,27 @@ While this template is intentionally minimal and to be used as a learning resour
 - https://makerkit.dev
 - https://zerotoshipped.com
 - https://turbostarter.dev
+
+
+To Setup
+0. Setup Submodules
+    Pull latest submodules
+        git submodule update --init --recursive
+    add pnpm workspace packages
+        "@repo/next-utils": "workspace:*",
+        "@repo/ui": "workspace:*",
+    add submodules to tsconfig.json - 
+      "@DonaldNgai/next-utils/*": ["./packages/next-utils/src/*"],
+      "@DonaldNgai/chakra-ui/*": ["./packages/ui/src/*"]
+1. Setup Auth0
+    Add lib/auth
+    Add middleware
+    Add auth/actions to call server functions from client
+
+2. Setup Prisma
+    Install Prisma and Prisma Client
+    Add db/prisma.ts
+    Add Env POSTGRES_URL="postgresql://postgres:postgres@localhost:54322/postgres?schema=public"
+
+3. Setup Stripe
+    Add api/stripe/webhooks to handle webhooks being called

@@ -1,8 +1,9 @@
 import crypto from "node:crypto";
-import { and, eq, isNull } from "drizzle-orm";
+// Drizzle removed - database operations disabled
+// import { and, eq, isNull } from "drizzle-orm";
 import { nanoid } from "nanoid";
-import { db } from "../db/client.js";
-import { apiKeys } from "../db/schema.js";
+// import { db } from "../db/client.js";
+// import { apiKeys } from "../db/schema.js";
 
 const KEY_PREFIX = "loc";
 
@@ -15,41 +16,34 @@ export async function createApiKey(groupId: string, label: string) {
   const secret = nanoid(32);
   const combined = `${KEY_PREFIX}_${tokenId}_${secret}`;
 
-  await db.insert(apiKeys).values({
-    id: tokenId,
-    groupId,
-    label,
-    hashedSecret: hashSecret(combined),
-    createdAt: new Date(),
-  });
+  // Database operations disabled - drizzle removed
+  // await db.insert(apiKeys).values({...});
+  // TODO: Implement database operations with new ORM/database solution
 
   return combined;
 }
 
 export async function revokeApiKey(keyId: string) {
-  await db.update(apiKeys).set({ revokedAt: new Date() }).where(eq(apiKeys.id, keyId));
+  // Database operations disabled - drizzle removed
+  // await db.update(apiKeys).set({ revokedAt: new Date() }).where(eq(apiKeys.id, keyId));
+  // TODO: Implement database operations with new ORM/database solution
 }
 
 export async function resolveApiKey(rawKey: string) {
   const [prefix, tokenId] = rawKey.split("_", 2);
   if (prefix !== KEY_PREFIX || !tokenId) return null;
 
-  const [record] = await db
-    .select()
-    .from(apiKeys)
-    .where(and(eq(apiKeys.id, tokenId), isNull(apiKeys.revokedAt)))
-    .limit(1);
+  // Database operations disabled - drizzle removed
+  // const [record] = await db.select().from(apiKeys).where(and(eq(apiKeys.id, tokenId), isNull(apiKeys.revokedAt))).limit(1);
+  const record = null; // TODO: Implement database operations with new ORM/database solution
 
   if (!record) return null;
 
   const hashed = hashSecret(rawKey);
-  if (crypto.timingSafeEqual(Buffer.from(hashed), Buffer.from(record.hashedSecret))) {
-    await db
-      .update(apiKeys)
-      .set({ lastUsedAt: new Date() })
-      .where(eq(apiKeys.id, record.id));
-    return record;
-  }
+  // if (crypto.timingSafeEqual(Buffer.from(hashed), Buffer.from(record.hashedSecret))) {
+  //   await db.update(apiKeys).set({ lastUsedAt: new Date() }).where(eq(apiKeys.id, record.id));
+  //   return record;
+  // }
 
   return null;
 }

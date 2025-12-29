@@ -1,0 +1,102 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_URL")
+}
+
+// User model - represents users in the system
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  groupMemberships GroupMember[]
+  apiKeys          ApiKey[]
+
+  @@map("users")
+}
+
+// Group model - represents groups/locations that users can join
+model Group {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  ownerId     String   @map("owner_id") // User ID who owns/created the group
+  apiBaseUrl  String?  @map("api_base_url")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  members   GroupMember[]
+  apiKeys   ApiKey[]
+  locations Location[]
+
+  @@map("groups")
+}
+
+// GroupMember model - join table for users and groups
+model GroupMember {
+  id        String   @id @default(cuid())
+  groupId   String   @map("group_id")
+  userId    String   @map("user_id")
+  status    String   @default("pending") // pending, active, inactive
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@map("group_members")
+}
+
+// Location model - stores location data points
+model Location {
+  id            String    @id @default(cuid())
+  groupId       String    @map("group_id")
+  deviceId      String    @map("device_id")
+  latitude      Float
+  longitude     Float
+  accuracy      Float?
+  speed         Float?
+  heading       Float?
+  recordedAt    DateTime  @map("recorded_at")
+  receivedAt    DateTime  @default(now()) @map("received_at")
+  payloadVersion String   @default("v1") @map("payload_version")
+  metadata      String?   // JSON string for additional data
+
+  // Relations
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([groupId])
+  @@index([deviceId])
+  @@index([recordedAt])
+  @@map("locations")
+}
+
+// ApiKey model - API keys for authenticating requests
+model ApiKey {
+  id          String    @id @default(cuid())
+  groupId     String    @map("group_id")
+  userId      String?   @map("user_id") // Optional: which user created it
+  label       String
+  hashedSecret String   @map("hashed_secret")
+  lastUsedAt  DateTime? @map("last_used_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  revokedAt   DateTime? @map("revoked_at")
+
+  // Relations
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([groupId])
+  @@map("api_keys")
+}

@@ -1,12 +1,14 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { eq } from "drizzle-orm";
+// Drizzle removed - database operations disabled
+// import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod";
-import { db } from "../db/client.js";
-import { groups, members } from "../db/schema.js";
+// import { db } from "../db/client.js";
+// import { groups, members } from "../db/schema.js";
 import { requireAuth } from "../utils/auth.js";
 
-type GroupRecord = typeof groups.$inferSelect;
+// Drizzle removed - stub type
+type GroupRecord = any;
 
 const groupResponse = z.object({
   id: z.string(),
@@ -36,17 +38,16 @@ export async function registerGroupRoutes(app: FastifyInstance) {
   async (request: FastifyRequest, reply: FastifyReply) => {
       const auth = await requireAuth(request, reply);
       const body = request.body as z.infer<typeof groupResponse> & { apiBaseUrl?: string };
-      const [record] = await db
-        .insert(groups)
-        .values({
-          id: nanoid(10),
-          name: body.name,
-          description: body.description,
-          apiBaseUrl: body.apiBaseUrl,
-          ownerId: auth.sub ?? "anonymous",
-          createdAt: new Date(),
-        })
-        .returning();
+      // Database operations disabled - drizzle removed
+      // TODO: Implement database operations with new ORM/database solution
+      const record = {
+        id: nanoid(10),
+        name: body.name,
+        description: body.description,
+        apiBaseUrl: body.apiBaseUrl,
+        ownerId: auth.sub ?? "anonymous",
+        createdAt: new Date(),
+      };
 
       reply.code(201).send({
         id: record.id,
@@ -72,7 +73,9 @@ export async function registerGroupRoutes(app: FastifyInstance) {
   async (request: FastifyRequest, reply: FastifyReply) => {
       const auth = await requireAuth(request, reply);
       const ownerId = auth.sub ?? "anonymous";
-      const rows = (await db.select().from(groups).where(eq(groups.ownerId, ownerId))) as GroupRecord[];
+      // Database operations disabled - drizzle removed
+      // const rows = (await db.select().from(groups).where(eq(groups.ownerId, ownerId))) as GroupRecord[];
+      const rows: GroupRecord[] = [];
       reply.send({
         items: rows.map((row: GroupRecord) => ({
           id: row.id,
@@ -105,16 +108,15 @@ export async function registerGroupRoutes(app: FastifyInstance) {
       const { groupId } = request.params as { groupId: string };
       const body = request.body as { email: string; reason?: string };
 
-      const [member] = await db
-        .insert(members)
-        .values({
-          id: nanoid(12),
-          groupId,
-          email: body.email,
-          status: "pending",
-          createdAt: new Date(),
-        })
-        .returning();
+      // Database operations disabled - drizzle removed
+      // TODO: Implement database operations with new ORM/database solution
+      const member = {
+        id: nanoid(12),
+        groupId,
+        email: body.email,
+        status: "pending",
+        createdAt: new Date(),
+      };
 
       reply.code(202).send({ status: "pending", memberId: member.id });
     }
