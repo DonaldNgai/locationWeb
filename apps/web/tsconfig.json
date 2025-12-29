@@ -15,7 +15,7 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "incremental": true,
     "baseUrl": ".",
     "plugins": [
@@ -27,8 +27,12 @@
       "@/*": [
         "./*"
       ],
-      "@DonaldNgai/next-utils/*": ["./packages/next-utils/src/*"],
-      "@DonaldNgai/chakra-ui/*": ["./packages/ui/src/*"]
+      "@DonaldNgai/next-utils/*": [
+        "./packages/next-utils/src/*"
+      ],
+      "@DonaldNgai/chakra-ui/*": [
+        "./packages/ui/src/*"
+      ]
     }
   },
   "include": [
@@ -36,7 +40,8 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts",
+    "../../middleware.ts"
   ],
   "exclude": [
     "node_modules"
