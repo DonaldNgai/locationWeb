@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Profile, OutlineButton, ChakraUIProvider } from '@DonaldNgai/chakra-ui';
+import { Profile, OutlineButton } from '@DonaldNgai/chakra-ui';
 import { adminRedirectPath, loginRedirectPath, logoutRedirectPath } from '@/config/app-config';
 
 function Header() {
@@ -41,11 +41,9 @@ function Header() {
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <ChakraUIProvider>
-      <section className="flex flex-col min-h-screen relative">
-        <Header />
-        {children}
-      </section>
-    </ChakraUIProvider>
+    <section className="flex flex-col min-h-screen relative">
+      <Header />
+      {children}
+    </section>
   );
 }

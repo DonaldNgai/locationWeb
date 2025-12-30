@@ -23,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <body className="min-h-[100dvh]">
         <Providers>
-          {children}
+            {children}
         </Providers>
       </body>
     </html>

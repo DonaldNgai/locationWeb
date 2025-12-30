@@ -1,65 +1,40 @@
-import { ReactNode } from 'react';
-import { cookies } from 'next/headers';
+'use client';
 
-import { AppSidebar } from './_components/sidebar/app-sidebar';
+import { ReactNode } from 'react';
+import { AppSidebar } from './sidebar/app-sidebar';
 import { Separator, SidebarInset, SidebarProvider, SidebarTrigger } from '@DonaldNgai/chakra-ui';
-import { cn } from '@DonaldNgai/chakra-ui/utils';
-import { getPreference } from '@DonaldNgai/next-utils/server/preferences';
+import { cn } from '@DonaldNgai/chakra-ui';
 import { Toaster } from '@DonaldNgai/chakra-ui';
 import { PreferencesStoreProvider } from '@DonaldNgai/chakra-ui/stores';
-import {
-  THEME_MODE_VALUES,
-  THEME_PRESET_VALUES,
-  type ThemeMode,
-  type ThemePreset,
-} from '@DonaldNgai/next-utils';
-import {
-  SIDEBAR_VARIANT_VALUES,
-  SIDEBAR_COLLAPSIBLE_VALUES,
-  CONTENT_LAYOUT_VALUES,
-  NAVBAR_STYLE_VALUES,
-  type SidebarVariant,
-  type SidebarCollapsible,
-  type ContentLayout,
-  type NavbarStyle,
+import type { ThemeMode, ThemePreset } from '@DonaldNgai/next-utils';
+import type {
+  SidebarVariant,
+  SidebarCollapsible,
+  ContentLayout,
+  NavbarStyle,
 } from '@DonaldNgai/next-utils';
 
-import { AccountSwitcher, SearchDialog } from '@DonaldNgai/chakra-ui';
-import { LayoutControls } from './_components/sidebar/layout-controls';
-import { ThemeSwitcher } from './_components/sidebar/theme-switcher';
-import { getCurrentUserFullDetails } from '@DonaldNgai/next-utils/auth/users';
-import { adminRedirectPath, loginRedirectPath, logoutRedirectPath } from '@/config/app-config';
-import { auth0 } from '@/lib/auth/auth0';
-export const dynamic = 'force-dynamic';
+type DashboardClientWrapperProps = {
+  children: ReactNode;
+  themeMode: ThemeMode;
+  themePreset: ThemePreset;
+  defaultOpen: boolean;
+  sidebarVariant: SidebarVariant;
+  sidebarCollapsible: SidebarCollapsible;
+  contentLayout: ContentLayout;
+  navbarStyle: NavbarStyle;
+};
 
-export default async function Layout({ children }: Readonly<{ children: ReactNode }>) {
-  // Get user data server-side instead of using SWR
-  const user = await getCurrentUserFullDetails(auth0);
-
-  const themeMode = await getPreference<ThemeMode>('theme_mode', THEME_MODE_VALUES, 'dark');
-  const themePreset = await getPreference<ThemePreset>(
-    'theme_preset',
-    THEME_PRESET_VALUES,
-    'tangerine'
-  );
-
-  const cookieStore = await cookies();
-  const defaultOpen = cookieStore.get('sidebar_state')?.value === 'true';
-
-  const [sidebarVariant, sidebarCollapsible, contentLayout, navbarStyle] = await Promise.all([
-    getPreference<SidebarVariant>('sidebar_variant', SIDEBAR_VARIANT_VALUES, 'inset'),
-    getPreference<SidebarCollapsible>('sidebar_collapsible', SIDEBAR_COLLAPSIBLE_VALUES, 'icon'),
-    getPreference<ContentLayout>('content_layout', CONTENT_LAYOUT_VALUES, 'full-width'),
-    getPreference<NavbarStyle>('navbar_style', NAVBAR_STYLE_VALUES, 'scroll'),
-  ]);
-
-  const layoutPreferences = {
-    contentLayout,
-    variant: sidebarVariant,
-    collapsible: sidebarCollapsible,
-    navbarStyle,
-  };
-
+export function DashboardClientWrapper({
+  children,
+  themeMode,
+  themePreset,
+  defaultOpen,
+  sidebarVariant,
+  sidebarCollapsible,
+  contentLayout,
+  navbarStyle,
+}: DashboardClientWrapperProps) {
   return (
     <PreferencesStoreProvider themeMode={themeMode} themePreset={themePreset}>
       <SidebarProvider defaultOpen={defaultOpen}>
@@ -104,3 +79,4 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
     </PreferencesStoreProvider>
   );
 }
+

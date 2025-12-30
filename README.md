@@ -109,6 +109,7 @@ While this template is intentionally minimal and to be used as a learning resour
 
 
 To Setup
+Use Next 15
 0. Setup Submodules
     Pull latest submodules
         git submodule update --init --recursive
@@ -120,6 +121,7 @@ To Setup
       "@DonaldNgai/chakra-ui/*": ["./packages/ui/src/*"]
     add packages to be transpiled to next.config.ts
           transpilePackages: ['@DonaldNgai/next-utils', '@DonaldNgai/chakra-ui'],
+    Make sure global.css and tailwind.config.ts references css from built packages
 
 1. Setup Auth0
     Add lib/auth
@@ -135,3 +137,4 @@ To Setup
 
 3. Setup Stripe
     Add api/stripe/webhooks to handle webhooks being called
+    Add stripe apiKey
