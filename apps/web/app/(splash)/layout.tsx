@@ -18,11 +18,11 @@ function Header() {
         </Link>
         <div className="flex items-center space-x-4">
           <OutlineButton
-                onClick={() => router.push('/rent')}
+                onClick={() => router.push('/dashboard')}
                 width="full"
                 size="lg"
                 fontWeight="bold"
-                >Book Now</OutlineButton>
+                >Get Started</OutlineButton>
           <Link href="/pricing" className="text-base font-semibold text-gray-700 hover:text-gray-900">
             Pricing
           </Link>

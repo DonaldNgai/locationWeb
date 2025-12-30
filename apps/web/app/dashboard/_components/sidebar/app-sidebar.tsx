@@ -21,9 +21,10 @@ import { NavUser } from './nav-user';
 import { getCurrentUser } from '@/app/actions/auth';
 import {
   LayoutDashboard,
-  ChartBar,
-  Mail,
-  MessageSquare,
+  Key,
+  BarChart3,
+  FileText,
+  Activity,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -36,17 +37,23 @@ interface NavItem {
 
 const navigation: { label: string; items: NavItem[] }[] = [
   {
-    label: 'Dashboards',
+    label: 'Overview',
     items: [
-      { title: 'Requests', url: '/dashboard', icon: LayoutDashboard },
-      { title: 'Fleet', url: '/dashboard/crm', icon: ChartBar },
+      { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
+      { title: 'API Keys', url: '/dashboard/keys', icon: Key },
     ],
   },
   {
-    label: 'Actions',
+    label: 'Analytics',
     items: [
-      { title: 'Request Equipment', url: '/rent', icon: Mail },
-      { title: 'Submit Equipment To Rent', url: '/dashboard/submit-equipment', icon: MessageSquare },
+      { title: 'Usage & Analytics', url: '/dashboard/analytics', icon: BarChart3 },
+      { title: 'API Activity', url: '/dashboard/activity', icon: Activity },
+    ],
+  },
+  {
+    label: 'Resources',
+    items: [
+      { title: 'API Documentation', url: '/dashboard/docs', icon: FileText },
     ],
   },
 ];
