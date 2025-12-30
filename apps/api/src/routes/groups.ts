@@ -1,15 +1,8 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-// Drizzle removed - database operations disabled
-// import { eq } from "drizzle-orm";
-import { nanoid } from "nanoid";
 import { z } from "zod";
-// import { db } from "../db/client.js";
-// import { groups, members } from "../db/schema.js";
-import { requireAuth } from "../utils/auth.js";
-import { zodToJsonSchemaFastify } from "../utils/zod-to-json-schema.js";
-
-// Drizzle removed - stub type
-type GroupRecord = any;
+import { prisma as db } from "@db/prisma.js";
+import { requireAuth } from "@utils/auth.js";
+import { zodToJsonSchemaFastify } from "@utils/zod-to-json-schema.js";
 
 const groupResponse = z.object({
   id: z.string(),
@@ -40,24 +33,35 @@ export async function registerGroupRoutes(app: FastifyInstance) {
     },
   async (request: FastifyRequest, reply: FastifyReply) => {
       const auth = await requireAuth(request, reply);
-      const body = request.body as z.infer<typeof groupResponse> & { apiBaseUrl?: string };
-      // Database operations disabled - drizzle removed
-      // TODO: Implement database operations with new ORM/database solution
-      const record = {
-        id: nanoid(10),
-        name: body.name,
-        description: body.description,
-        apiBaseUrl: body.apiBaseUrl,
-        ownerId: auth.sub ?? "anonymous",
-        createdAt: new Date(),
-      };
+      const body = request.body as { name: string; description?: string; apiBaseUrl?: string };
+      const ownerId = auth.sub ?? "anonymous";
+
+      // Find or create user
+      let user = await db.user.findUnique({ where: { email: auth.email as string } });
+      if (!user && auth.email) {
+        user = await db.user.create({
+          data: {
+            email: auth.email as string,
+            name: auth.name as string | undefined,
+          },
+        });
+      }
+
+      const record = await db.group.create({
+        data: {
+          name: body.name,
+          description: body.description,
+          apiBaseUrl: body.apiBaseUrl,
+          ownerId: user?.id ?? ownerId,
+        },
+      });
 
       reply.code(201).send({
         id: record.id,
         name: record.name,
         description: record.description ?? null,
         apiBaseUrl: record.apiBaseUrl ?? null,
-        createdAt: record.createdAt?.toISOString() ?? new Date().toISOString(),
+        createdAt: record.createdAt.toISOString(),
       });
     }
   );
@@ -76,16 +80,34 @@ export async function registerGroupRoutes(app: FastifyInstance) {
   async (request: FastifyRequest, reply: FastifyReply) => {
       const auth = await requireAuth(request, reply);
       const ownerId = auth.sub ?? "anonymous";
-      // Database operations disabled - drizzle removed
-      // const rows = (await db.select().from(groups).where(eq(groups.ownerId, ownerId))) as GroupRecord[];
-      const rows: GroupRecord[] = [];
+
+      // Find user by email or sub
+      let user = await db.user.findFirst({
+        where: {
+          OR: [{ email: auth.email as string }, { id: ownerId }],
+        },
+      });
+
+      if (!user && auth.email) {
+        user = await db.user.create({
+          data: {
+            email: auth.email as string,
+            name: auth.name as string | undefined,
+          },
+        });
+      }
+
+      const rows = await db.group.findMany({
+        where: { ownerId: user?.id ?? ownerId },
+      });
+
       reply.send({
-        items: rows.map((row: GroupRecord) => ({
+        items: rows.map((row: { id: string; name: string; description: string | null; apiBaseUrl: string | null; createdAt: Date }) => ({
           id: row.id,
           name: row.name,
           description: row.description ?? null,
           apiBaseUrl: row.apiBaseUrl ?? null,
-          createdAt: row.createdAt?.toISOString() ?? new Date().toISOString(),
+          createdAt: row.createdAt.toISOString(),
         })),
       });
     }
@@ -115,15 +137,38 @@ export async function registerGroupRoutes(app: FastifyInstance) {
       const { groupId } = request.params as { groupId: string };
       const body = request.body as { email: string; reason?: string };
 
-      // Database operations disabled - drizzle removed
-      // TODO: Implement database operations with new ORM/database solution
-      const member = {
-        id: nanoid(12),
-        groupId,
-        email: body.email,
-        status: "pending",
-        createdAt: new Date(),
-      };
+      // Verify group exists
+      const group = await db.group.findUnique({ where: { id: groupId } });
+      if (!group) {
+        reply.code(404);
+        throw new Error("Group not found");
+      }
+
+      // Find or create user
+      let user = await db.user.findUnique({ where: { email: body.email } });
+      if (!user) {
+        user = await db.user.create({
+          data: { email: body.email },
+        });
+      }
+
+      // Create or update membership
+      const member = await db.groupMember.upsert({
+        where: {
+          groupId_userId: {
+            groupId,
+            userId: user.id,
+          },
+        },
+        create: {
+          groupId,
+          userId: user.id,
+          status: "pending",
+        },
+        update: {
+          status: "pending",
+        },
+      });
 
       reply.code(202).send({ status: "pending", memberId: member.id });
     }

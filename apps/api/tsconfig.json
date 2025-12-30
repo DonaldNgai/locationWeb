@@ -4,9 +4,17 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
+    "baseUrl": ".",
     "moduleResolution": "NodeNext",
     "module": "NodeNext",
-    "types": ["node"]
+    "types": ["node"],
+    "paths": {
+      "@db/*": ["../../db/*"],
+      "@utils/*": ["src/utils/*"],
+      "@services/*": ["src/services/*"],
+      "@routes/*": ["src/routes/*"],
+      "@types/*": ["src/types/*"]
+    }
   },
   "include": ["src"]
 }

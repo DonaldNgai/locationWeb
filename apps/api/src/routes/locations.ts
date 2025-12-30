@@ -1,12 +1,10 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest, FastifySchema } from "fastify";
 import { nanoid } from "nanoid";
 import { z } from "zod";
-// Drizzle removed - database operations disabled
-// import { db } from "../db/client.js";
-// import { locations } from "../db/schema.js";
-import { locationBus } from "../services/bus.js";
-import { requireApiKey } from "../utils/api-key.js";
-import { zodToJsonSchemaFastify } from "../utils/zod-to-json-schema.js";
+import { prisma as db } from "@db/prisma.js";
+import { locationBus } from "@services/bus.js";
+import { requireApiKey } from "@utils/api-key.js";
+import { zodToJsonSchemaFastify } from "@utils/zod-to-json-schema.js";
 
 const locationPayload = z.object({
   deviceId: z.string().min(3).max(128),
@@ -63,9 +61,22 @@ export async function registerLocationRoutes(app: FastifyInstance) {
         receivedAt: new Date(),
       };
 
-      // Database operations disabled - drizzle removed
-      // const [record] = await db.insert(locations).values(payload).returning();
-      const record = { id: payload.id, receivedAt: payload.receivedAt };
+      const record = await db.location.create({
+        data: {
+          id: payload.id,
+          groupId: payload.groupId,
+          deviceId: payload.deviceId,
+          latitude: payload.latitude,
+          longitude: payload.longitude,
+          accuracy: payload.accuracy,
+          heading: payload.heading,
+          speed: payload.speed,
+          recordedAt: payload.recordedAt,
+          receivedAt: payload.receivedAt,
+          payloadVersion: payload.payloadVersion,
+          metadata: payload.metadata,
+        },
+      });
 
       locationBus.publishLocation(apiKey.groupId, {
         deviceId: body.deviceId,
