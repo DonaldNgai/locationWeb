@@ -6,11 +6,13 @@ import {
   HStack,
   Heading,
   Text,
-  Card,
+  SimpleGrid,
+} from '@chakra-ui/react';
+import {
+  CardRoot as Card,
   CardHeader,
   CardBody,
-  CardTitle,
-  SimpleGrid,
+  Heading as CardTitle,
 } from '@chakra-ui/react';
 import {
   Activity,
@@ -101,6 +103,9 @@ export default function AnalyticsPage() {
                     </Box>
                   </HStack>
                 </CardHeader>
+                <CardBody>
+                  {/* Empty content for stat cards */}
+                </CardBody>
               </Card>
             );
           })}

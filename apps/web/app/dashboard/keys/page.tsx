@@ -8,12 +8,14 @@ import {
   HStack,
   Heading,
   Text,
-  Card,
-  CardHeader,
-  CardBody,
-  CardTitle,
   Button,
   Input,
+} from '@chakra-ui/react';
+import {
+  CardRoot as Card,
+  CardHeader,
+  CardBody,
+  Heading as CardTitle,
 } from '@chakra-ui/react';
 import {
   Key,
@@ -297,9 +299,8 @@ export default function ApiKeysPage() {
                               py={0.5}
                               borderRadius="md"
                               bg="yellow.100"
-                              className="dark:bg-yellow-900"
+                              className="dark:bg-yellow-900 dark:text-yellow-300"
                               color="yellow.700"
-                              className="dark:text-yellow-300"
                               fontSize="xs"
                               fontWeight="medium"
                             >

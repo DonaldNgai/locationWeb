@@ -364,3 +364,22 @@
     transparent 100%
   );
 }
+
+/* Ensure sidebar tooltips are visible when sidebar is collapsed */
+[data-sidebar="sidebar"] {
+  overflow: visible !important;
+}
+
+[data-sidebar="footer"] {
+  overflow: visible !important;
+  padding-bottom: 0.5rem;
+}
+
+/* Ensure tooltips appear above sidebar */
+[data-slot="tooltip-positioner"] {
+  z-index: 100 !important;
+}
+
+[data-slot="tooltip-content"] {
+  z-index: 100 !important;
+}

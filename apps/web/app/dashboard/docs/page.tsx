@@ -5,13 +5,15 @@ import {
   VStack,
   Heading,
   Text,
-  Card,
-  CardHeader,
-  CardBody,
-  CardTitle,
   HStack,
   Button,
   SimpleGrid,
+} from '@chakra-ui/react';
+import {
+  CardRoot as Card,
+  CardHeader,
+  CardBody,
+  Heading as CardTitle,
 } from '@chakra-ui/react';
 import {
   FileText,
@@ -60,12 +62,27 @@ export default function DocsPage() {
       <VStack align="stretch" gap={6}>
         {/* Header */}
         <Box>
-          <Heading as="h1" size={{ base: 'lg', lg: 'xl' }} fontWeight="medium">
-            API Documentation
-          </Heading>
-          <Text color="fg.muted" mt={1}>
-            Complete guide to integrating location services into your application
-          </Text>
+          <HStack justify="space-between" align="start" flexWrap="wrap" gap={4}>
+            <Box>
+              <Heading as="h1" size={{ base: 'lg', lg: 'xl' }} fontWeight="medium">
+                API Documentation
+              </Heading>
+              <Text color="fg.muted" mt={1}>
+                Complete guide to integrating location services into your application
+              </Text>
+            </Box>
+            <Button
+              asChild
+              size="lg"
+              colorScheme="blue"
+            >
+              <Link href="https://github.com/DonaldNgai/locationWeb/blob/main/README.md" target="_blank" rel="noopener noreferrer">
+                <FileText size={18} className="mr-2" />
+                View Full README
+                <ExternalLink size={16} className="ml-2" />
+              </Link>
+            </Button>
+          </HStack>
         </Box>
 
         {/* Quick Start */}

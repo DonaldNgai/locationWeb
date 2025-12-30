@@ -5,10 +5,12 @@ import {
   VStack,
   Heading,
   Text,
-  Card,
+} from '@chakra-ui/react';
+import {
+  CardRoot as Card,
   CardHeader,
   CardBody,
-  CardTitle,
+  Heading as CardTitle,
 } from '@chakra-ui/react';
 import { Activity } from 'lucide-react';
 

@@ -14,8 +14,8 @@ export function NavUser({ users }: { readonly users: ReadonlyArray<User> }) {
   }));
 
   return (
-    <SidebarMenu>
-      <SidebarMenuItem>
+    <SidebarMenu className="overflow-visible">
+      <SidebarMenuItem className="overflow-visible">
         <AccountSwitcher users={convertedUsers} fullSize={true} />
       </SidebarMenuItem>
     </SidebarMenu>
