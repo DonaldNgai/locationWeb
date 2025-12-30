@@ -3,13 +3,13 @@ import packageJson from '../package.json';
 const currentYear = new Date().getFullYear();
 
 export const APP_CONFIG = {
-  name: 'FleetLink',
+  name: 'GoFindMe',
   version: packageJson.version,
-  copyright: `© ${currentYear}, FleetLink.`,
+  copyright: `© ${currentYear}, gofindme.`,
   meta: {
-    title: 'FleetLink - Reliable Equipment Rental',
+    title: 'GoFindMe - Easy Location Services API for Developers',
     description:
-      'FleetLink is a modern fully automated construction equipment rental platform. It handles all the payment and management processes so you can focus on your projects.',
+      'GoFindMe provides developers with a simple, powerful API to add location tracking and location services to their applications. Get started in minutes with our developer-friendly location API.',
   },
 };
 

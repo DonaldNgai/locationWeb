@@ -7,12 +7,10 @@ export function Terminal() {
   const [terminalStep, setTerminalStep] = useState(0);
   const [copied, setCopied] = useState(false);
   const terminalSteps = [
-    'git clone https://github.com/nextjs/saas-starter',
-    'pnpm install',
-    'pnpm db:setup',
-    'pnpm db:migrate',
-    'pnpm db:seed',
-    'pnpm dev 🎉',
+    'npm install @location/api-client',
+    'const client = new LocationClient({ apiKey: "YOUR_KEY" })',
+    'await client.trackLocation({ lat: 37.7749, lng: -122.4194 })',
+    '// That\'s it! Location tracking active 🚀',
   ];
 
   useEffect(() => {

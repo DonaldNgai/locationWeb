@@ -28,23 +28,22 @@ import { useRouter } from 'next/navigation';
 import { OutlineButton } from '@DonaldNgai/chakra-ui';
 
 import { FadeIn, FadeInStagger, FadeInStaggerItem, WordDivider } from '@DonaldNgai/chakra-ui';
-import { ArrowRight, FileText, Zap, Clock, Star } from 'lucide-react';
+import { ArrowRight, Code, Zap, Shield, Cpu, Smartphone, Sparkles, Lock, Database, Star } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { Terminal } from './terminal';
 
-const companyLogos = [
-  { name: 'CAT', url: 'https://cdn.simpleicons.org/caterpillar' },
-  { name: 'Volvo', url: 'https://cdn.simpleicons.org/volvo' },
-  { name: 'JCB', url: 'https://cdn.simpleicons.org/jcb' },
-  { name: 'Hitachi', url: 'https://cdn.simpleicons.org/hitachi' },
-  { name: 'John Deere', url: 'https://cdn.simpleicons.org/johndeere' },
+const techLogos = [
+  { name: 'TypeScript', url: 'https://cdn.simpleicons.org/typescript' },
+  { name: 'Node.js', url: 'https://cdn.simpleicons.org/nodedotjs' },
+  { name: 'Python', url: 'https://cdn.simpleicons.org/python' },
+  { name: 'React', url: 'https://cdn.simpleicons.org/react' },
+  { name: 'Next.js', url: 'https://cdn.simpleicons.org/nextdotjs' },
 ];
 
-function LogoTicker({ slides }: { slides: typeof companyLogos }) {
+function LogoTicker({ slides }: { slides: typeof techLogos }) {
   const duplicatedSlides = [...slides, ...slides, ...slides];
-  // Each logo box is w="32" (8rem = 128px) + mx="4" (1rem = 16px on each side = 32px) = 160px per logo
-  // For 5 logos per set: 5 * 160px = 800px per set
-  const setWidth = slides.length * 160; // Approximate width of one set
+  const setWidth = slides.length * 160;
   
   return (
     <Box
@@ -81,7 +80,7 @@ function LogoTicker({ slides }: { slides: typeof companyLogos }) {
             h="16"
             mx="4"
             bg="white/80"
-            _dark={{ bg: 'gray.800/80' }}
+            className="dark:bg-gray-800/80"
             borderRadius="lg"
             backdropFilter="blur-sm"
             p="3"
@@ -106,7 +105,7 @@ export default function HomePage() {
 
   return (
     <Box as="main" minH="100vh" position="relative" bg="bg.canvas">
-      {/* Subtle background image */}
+      {/* Tech-inspired background */}
       <Box
         position="fixed"
         inset="0"
@@ -116,89 +115,109 @@ export default function HomePage() {
         <Box
           position="absolute"
           inset="0"
-          opacity="0.3"
+          opacity="0.4"
           style={{
-            backgroundImage: 'url(https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=2029&auto=format&fit=crop)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
+            backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%)',
           }}
         />
         <Box
           position="absolute"
           inset="0"
           bgGradient="to-br"
-          bg="white/90"
-          _dark={{ bg: 'gray.950/90' }}
+          bg="white/95"
+          className="dark:bg-gray-950/95"
+        />
+        {/* Grid pattern overlay */}
+        <Box
+          position="absolute"
+          inset="0"
+          opacity="0.03"
+          className="dark:opacity-[0.05]"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(0, 0, 0, 0.1) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(0, 0, 0, 0.1) 1px, transparent 1px)
+            `,
+            backgroundSize: '50px 50px',
+          }}
         />
       </Box>
 
       {/* Hero Section */}
       <Box as="section" position="relative" py={{ base: 20, lg: 32 }} overflow="hidden" zIndex="10">
-        {/* Hero Image */}
-        <Box position="absolute" inset="0" zIndex="-10" opacity="0.1">
-          <Image
-            src="https://images.unsplash.com/photo-1581094794329-c8112a89af12?q=80&w=2070&auto=format&fit=crop"
-            alt="Construction equipment"
-            fill
-            className="object-cover"
-            priority
-          />
-        </Box>
-
         <Container maxW="7xl" px={{ base: 4, sm: 6, lg: 8 }}>
           <FadeInStagger>
-            <VStack gap="8" maxW="4xl" mx="auto" textAlign="center">
+            <Grid templateColumns={{ base: '1fr', lg: '1fr 1fr' }} gap={{ base: 8, lg: 12 }} alignItems="center">
               <FadeInStaggerItem>
-                <Heading
-                  as="h1"
-                  size={{ base: '3xl', md: '4xl', lg: '5xl' }}
-                  fontWeight="bold"
-                  letterSpacing="tight"
-                  lineHeight="1.1"
-                >
-                  Book Trucks & Equipment Fast
-                </Heading>
-              </FadeInStaggerItem>
-
-              <FadeInStaggerItem>
-                <Text
-                  fontSize={{ base: 'xl', md: '2xl' }}
-                  color="fg.muted"
-                  maxW="3xl"
-                  mx="auto"
-                >
-                  Pre-vetted and insured operators, fair pricing, and fast availability — all in one place.
-                </Text>
-              </FadeInStaggerItem>
-
-              <FadeInStaggerItem>
-                <HStack gap="3" justify="center" flexWrap="wrap" mb="12">
-                  <Badge variant="subtle" size="lg" px="4" py="2">
-                    Fast Payments
+                <VStack gap="6" alignItems={{ base: 'center', lg: 'start' }} textAlign={{ base: 'center', lg: 'left' }}>
+                  <Badge variant="subtle" size="lg" px="4" py="2" colorScheme="blue">
+                    By Developers, For Developers
                   </Badge>
-                  <Badge variant="subtle" size="lg" px="4" py="2">
-                    Reliability
-                  </Badge>
-                  <Badge variant="subtle" size="lg" px="4" py="2">
-                    Seamless
-                  </Badge>
-                </HStack>
+                  
+                  <Heading
+                    as="h1"
+                    size={{ base: '3xl', md: '4xl', lg: '5xl' }}
+                    fontWeight="bold"
+                    letterSpacing="tight"
+                    lineHeight="1.1"
+                  >
+                    Add Location Features to Your App in{' '}
+                    <Text as="span" color="blue.600" className="dark:text-blue-400">
+                      Seconds
+                    </Text>
+                  </Heading>
+
+                  <Text
+                    fontSize={{ base: 'xl', md: '2xl' }}
+                    color="fg.muted"
+                    maxW="2xl"
+                  >
+                    Powerful location API with intelligent caching, permission handling, and AI-friendly design. 
+                    No mobile app required—we've got that covered.
+                  </Text>
+
+                  <HStack gap="4" flexWrap="wrap" justify={{ base: 'center', lg: 'start' }}>
+                    <OutlineButton
+                      onClick={() => router.push('/dashboard/keys?create=true')}
+                      size="lg"
+                      fontWeight="bold"
+                      px="8"
+                    >
+                      Create API Key Now
+                      <ArrowRight className="ml-2" size={20} />
+                    </OutlineButton>
+                    <Button
+                      variant="ghost"
+                      size="lg"
+                      onClick={() => router.push('/docs')}
+                    >
+                      View Docs
+                    </Button>
+                  </HStack>
+
+                  <HStack gap="3" justify={{ base: 'center', lg: 'start' }} flexWrap="wrap">
+                    <Badge variant="subtle" size="lg" px="4" py="2">
+                      <Sparkles className="inline mr-1" size={14} />
+                      AI-Friendly
+                    </Badge>
+                    <Badge variant="subtle" size="lg" px="4" py="2">
+                      <Zap className="inline mr-1" size={14} />
+                      Fast Integration
+                    </Badge>
+                    <Badge variant="subtle" size="lg" px="4" py="2">
+                      <Shield className="inline mr-1" size={14} />
+                      Built-in Security
+                    </Badge>
+                  </HStack>
+                </VStack>
               </FadeInStaggerItem>
 
               <FadeInStaggerItem>
-                <Text fontSize="sm" color="fg.muted" mb="8" pt="12">
-                  Trusted by <Text as="span" fontWeight="bold" fontStyle="italic">500+</Text> contractors and suppliers
-                </Text>
-              </FadeInStaggerItem>
-
-              <FadeInStaggerItem>
-                {/* Logo Ticker */}
-                <Box mb="12" width="full">
-                  <LogoTicker slides={companyLogos} />
+                <Box display={{ base: 'none', lg: 'block' }}>
+                  <Terminal />
                 </Box>
               </FadeInStaggerItem>
-            </VStack>
+            </Grid>
           </FadeInStagger>
         </Container>
       </Box>
@@ -209,18 +228,16 @@ export default function HomePage() {
           <FadeIn>
             <VStack gap="4" mb="16" textAlign="center">
               <Heading as="h2" size={{ base: '3xl', md: '4xl' }} fontWeight="bold">
-                Faster Jobs, Less Hassle
+                Built for Developers Who Ship Fast
               </Heading>
               <Text fontSize="lg" color="fg.muted" maxW="3xl" mx="auto">
-                FleetLink is a private marketplace of +500 companies, connecting owner-operated
-                construction equipment to contractors. Every equipment supplier is pre-vetted to
-                ensure reliability and our proprietary tracking system ensures every contractor
-                receives the equipment they requested.
+                Stop wrestling with location permissions, caching strategies, and mobile app development. 
+                We handle the complexity so you can focus on building features.
               </Text>
             </VStack>
           </FadeIn>
 
-          <SimpleGrid columns={{ base: 1, md: 3 }} gap="8">
+          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap="8">
             <FadeInStaggerItem>
               <Card height="full">
                 <CardHeader>
@@ -234,40 +251,16 @@ export default function HomePage() {
                     borderRadius="lg"
                     bg="blue.600"
                     color="white"
-                    _dark={{ bg: 'blue.500' }}
-                  >
-                    <FileText size={24} />
-                  </Box>
-                  <CardTitle>Hassle-Free Rentals</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription>We handle coordination and paperwork</CardDescription>
-                </CardContent>
-              </Card>
-            </FadeInStaggerItem>
-
-            <FadeInStaggerItem>
-              <Card height="full">
-                <CardHeader>
-                  <Box
-                    mb="4"
-                    display="flex"
-                    h="12"
-                    w="12"
-                    alignItems="center"
-                    justifyContent="center"
-                    borderRadius="lg"
-                    bg="blue.600"
-                    color="white"
-                    _dark={{ bg: 'blue.500' }}
+                    className="dark:bg-blue-500"
                   >
                     <Zap size={24} />
                   </Box>
-                  <CardTitle>Reliable Equipment</CardTitle>
+                  <CardTitle>Deploy in Seconds</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <CardDescription>
-                    Every operator is pre-vetted for safety and reliability.
+                    Get started with a single API call. No complex setup, no mobile SDKs to manage. 
+                    Just install, authenticate, and start tracking.
                   </CardDescription>
                 </CardContent>
               </Card>
@@ -284,16 +277,131 @@ export default function HomePage() {
                     alignItems="center"
                     justifyContent="center"
                     borderRadius="lg"
-                    bg="blue.600"
+                    bg="purple.600"
                     color="white"
-                    _dark={{ bg: 'blue.500' }}
+                    className="dark:bg-purple-500"
                   >
-                    <Clock size={24} />
+                    <Database size={24} />
                   </Box>
-                  <CardTitle>Fast Booking</CardTitle>
+                  <CardTitle>Intelligent Caching</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription>90% of requests are filled within 2 hours.</CardDescription>
+                  <CardDescription>
+                    We handle caching, rate limiting, and data optimization automatically. 
+                    Your location data is always fresh and efficiently stored.
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            </FadeInStaggerItem>
+
+            <FadeInStaggerItem>
+              <Card height="full">
+                <CardHeader>
+                  <Box
+                    mb="4"
+                    display="flex"
+                    h="12"
+                    w="12"
+                    alignItems="center"
+                    justifyContent="center"
+                    borderRadius="lg"
+                    bg="green.600"
+                    color="white"
+                    className="dark:bg-green-500"
+                  >
+                    <Lock size={24} />
+                  </Box>
+                  <CardTitle>Permission Handling</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription>
+                    We manage location permissions, privacy compliance, and access control. 
+                    No need to deal with platform-specific permission flows.
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            </FadeInStaggerItem>
+
+            <FadeInStaggerItem>
+              <Card height="full">
+                <CardHeader>
+                  <Box
+                    mb="4"
+                    display="flex"
+                    h="12"
+                    w="12"
+                    alignItems="center"
+                    justifyContent="center"
+                    borderRadius="lg"
+                    bg="orange.600"
+                    color="white"
+                    className="dark:bg-orange-500"
+                  >
+                    <Smartphone size={24} />
+                  </Box>
+                  <CardTitle>Mobile App Included</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription>
+                    Don't build a mobile app—we've got you covered. Use our ready-made app 
+                    or integrate our API into your existing mobile solution.
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            </FadeInStaggerItem>
+
+            <FadeInStaggerItem>
+              <Card height="full">
+                <CardHeader>
+                  <Box
+                    mb="4"
+                    display="flex"
+                    h="12"
+                    w="12"
+                    alignItems="center"
+                    justifyContent="center"
+                    borderRadius="lg"
+                    bg="pink.600"
+                    color="white"
+                    className="dark:bg-pink-500"
+                  >
+                    <Sparkles size={24} />
+                  </Box>
+                  <CardTitle>AI-Friendly Design</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription>
+                    Built with AI agents in mind. Clean, predictable APIs that work seamlessly 
+                    with LLMs and AI-powered tools.
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            </FadeInStaggerItem>
+
+            <FadeInStaggerItem>
+              <Card height="full">
+                <CardHeader>
+                  <Box
+                    mb="4"
+                    display="flex"
+                    h="12"
+                    w="12"
+                    alignItems="center"
+                    justifyContent="center"
+                    borderRadius="lg"
+                    bg="cyan.600"
+                    color="white"
+                    className="dark:bg-cyan-500"
+                  >
+                    <Code size={24} />
+                  </Box>
+                  <CardTitle>Developer Experience First</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription>
+                    TypeScript-first, comprehensive docs, and SDKs for your favorite languages. 
+                    Built by developers who understand what you need.
+                  </CardDescription>
                 </CardContent>
               </Card>
             </FadeInStaggerItem>
@@ -301,75 +409,124 @@ export default function HomePage() {
         </Container>
       </Box>
 
-      {/* Meeting You Section */}
+      {/* How It Works Section */}
       <Box as="section" py="16" position="relative" zIndex="10">
         <Container maxW="7xl" px={{ base: 4, sm: 6, lg: 8 }}>
-          <Grid templateColumns={{ base: '1fr', lg: '1fr 1fr' }} gap="12" alignItems="center">
-            <FadeInStaggerItem>
-              <VStack gap="6" alignItems="start">
-                <Heading as="h2" size={{ base: '3xl', md: '4xl' }} fontWeight="bold">
-                  Meeting you where you are
-                </Heading>
-                <Text fontSize="lg" color="fg.muted">
-                  Founded by construction company owners, we understand how you work. We meet you
-                  where you are. No complicated marketplace. So you can focus on the job at hand.
-                </Text>
-              </VStack>
-            </FadeInStaggerItem>
-
-            <FadeInStaggerItem>
-              <Box position="relative" borderRadius="lg" overflow="hidden" aspectRatio="16/9">
-                <Image
-                  src="https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?q=80&w=2070&auto=format&fit=crop"
-                  alt="Construction site meeting"
-                  fill
-                  className="object-cover"
-                />
-              </Box>
-            </FadeInStaggerItem>
-          </Grid>
-        </Container>
-      </Box>
-
-      {/* 500+ Companies Section */}
-      <Box as="section" py="16" bg="bg.muted" position="relative" zIndex="10">
-        <Container maxW="7xl" px={{ base: 4, sm: 6, lg: 8 }}>
-          <Grid templateColumns={{ base: '1fr', lg: '1fr 1fr' }} gap="12" alignItems="center">
-            <GridItem order={{ base: 2, lg: 1 }}>
-              <SimpleGrid columns={2} gap="4">
-                <Box position="relative" borderRadius="lg" overflow="hidden" aspectRatio="1">
-                  <Image
-                    src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop"
-                    alt="Construction equipment fleet"
-                    fill
-                    className="object-cover"
-                  />
-                </Box>
-                <Box position="relative" borderRadius="lg" overflow="hidden" aspectRatio="1">
-                  <Image
-                    src="https://images.unsplash.com/photo-1590674899484-d5640e854abe?q=80&w=2074&auto=format&fit=crop"
-                    alt="Heavy machinery"
-                    fill
-                    className="object-cover"
-                  />
-                </Box>
-              </SimpleGrid>
-            </GridItem>
-
-            <GridItem order={{ base: 1, lg: 2 }}>
+          <FadeInStagger>
+            <VStack gap="8" alignItems="start" maxW="4xl" mx="auto">
               <FadeInStaggerItem>
                 <VStack gap="6" alignItems="start">
                   <Heading as="h2" size={{ base: '3xl', md: '4xl' }} fontWeight="bold">
-                    500+ In-Network Companies
+                    Stop Building, Start Shipping
                   </Heading>
                   <Text fontSize="lg" color="fg.muted">
-                    Exclusive Access to Our List of Contractors and Suppliers guarantee that you a
-                    500% increase in your revenue.
+                    We've solved the hard problems so you don't have to. Location tracking shouldn't 
+                    require a team of mobile developers, backend engineers, and DevOps specialists. 
+                    Get a production-ready location API in minutes, not months.
                   </Text>
                 </VStack>
               </FadeInStaggerItem>
-            </GridItem>
-          </Grid>
+              <FadeInStaggerItem>
+                <SimpleGrid columns={{ base: 1, md: 2 }} gap="4" width="full">
+                  <HStack gap="3">
+                    <Box
+                      display="flex"
+                      h="10"
+                      w="10"
+                      alignItems="center"
+                      justifyContent="center"
+                      borderRadius="md"
+                      bg="blue.100"
+                      className="dark:bg-blue-900"
+                      color="blue.600"
+                      flexShrink="0"
+                    >
+                      <Cpu size={18} />
+                    </Box>
+                    <Text fontWeight="medium">Automatic caching and optimization</Text>
+                  </HStack>
+                  <HStack gap="3">
+                    <Box
+                      display="flex"
+                      h="10"
+                      w="10"
+                      alignItems="center"
+                      justifyContent="center"
+                      borderRadius="md"
+                      bg="green.100"
+                      className="dark:bg-green-900"
+                      color="green.600"
+                      flexShrink="0"
+                    >
+                      <Shield size={18} />
+                    </Box>
+                    <Text fontWeight="medium">Built-in permission and privacy management</Text>
+                  </HStack>
+                  <HStack gap="3">
+                    <Box
+                      display="flex"
+                      h="10"
+                      w="10"
+                      alignItems="center"
+                      justifyContent="center"
+                      borderRadius="md"
+                      bg="purple.100"
+                      className="dark:bg-purple-900"
+                      color="purple.600"
+                      flexShrink="0"
+                    >
+                      <Smartphone size={18} />
+                    </Box>
+                    <Text fontWeight="medium">Ready-to-use mobile app included</Text>
+                  </HStack>
+                  <HStack gap="3">
+                    <Box
+                      display="flex"
+                      h="10"
+                      w="10"
+                      alignItems="center"
+                      justifyContent="center"
+                      borderRadius="md"
+                      bg="orange.100"
+                      className="dark:bg-orange-900"
+                      color="orange.600"
+                      flexShrink="0"
+                    >
+                      <Sparkles size={18} />
+                    </Box>
+                    <Text fontWeight="medium">AI-friendly API design</Text>
+                  </HStack>
+                </SimpleGrid>
+              </FadeInStaggerItem>
+            </VStack>
+          </FadeInStagger>
+        </Container>
+      </Box>
+
+      {/* Tech Stack Section */}
+      <Box as="section" py="16" bg="bg.muted" position="relative" zIndex="10">
+        <Container maxW="7xl" px={{ base: 4, sm: 6, lg: 8 }}>
+          <FadeInStagger>
+            <VStack gap="8" alignItems="center" textAlign="center" maxW="4xl" mx="auto">
+              <FadeInStaggerItem>
+                <VStack gap="6" alignItems="center">
+                  <Heading as="h2" size={{ base: '3xl', md: '4xl' }} fontWeight="bold">
+                    Works with Your Stack
+                  </Heading>
+                  <Text fontSize="lg" color="fg.muted" maxW="3xl">
+                    Whether you're building with TypeScript, Python, or any other language, 
+                    we've got SDKs and clear REST APIs that integrate seamlessly. 
+                    No vendor lock-in, no proprietary protocols—just clean, standard APIs.
+                  </Text>
+                </VStack>
+              </FadeInStaggerItem>
+              <FadeInStaggerItem>
+                <Box width="full" maxW="4xl">
+                  <LogoTicker slides={techLogos} />
+                </Box>
+              </FadeInStaggerItem>
+            </VStack>
+          </FadeInStagger>
         </Container>
       </Box>
 
@@ -379,11 +536,10 @@ export default function HomePage() {
           <FadeIn>
             <VStack gap="4" mb="16" textAlign="center">
               <Heading as="h2" size={{ base: '3xl', md: '4xl' }} fontWeight="bold">
-                Trusted by Industry Leaders, Loved by Contractors
+                Built by Developers, Trusted by Teams
               </Heading>
               <Text fontSize="lg" color="fg.muted" mb="12" maxW="3xl" mx="auto">
-                FleetLink's success is measured by our clients' results. Hear from equipment owners
-                and contractors who've transformed their operations.
+                See how other developers are shipping location features faster with our API.
               </Text>
             </VStack>
           </FadeIn>
@@ -400,21 +556,17 @@ export default function HomePage() {
                     ))}
                   </HStack>
                   <Text color="fg.muted" mb="6" fontSize="md" lineHeight="relaxed">
-                    "FleetLink completely transformed our operations. We got a last-minute rental
-                    request on a Friday afternoon, and within 90 minutes, they had us matched with
-                    the perfect excavator. Got paid within 48 hours instead of the usual 30+ days!"
+                    "We were spending weeks building location tracking infrastructure. 
+                    With this API, we had it working in an afternoon. The caching and permission 
+                    handling alone saved us months of work."
                   </Text>
                   <HStack gap="3" alignItems="center">
                     <Avatar.Root size="md">
-                      <Avatar.Image
-                        src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=2070&auto=format&fit=crop"
-                        alt="Mike Thompson"
-                      />
-                      <Avatar.Fallback>MT</Avatar.Fallback>
+                      <Avatar.Fallback>SM</Avatar.Fallback>
                     </Avatar.Root>
                     <VStack gap="0" alignItems="start">
-                      <Text fontWeight="semibold">Mike Thompson</Text>
-                      <Text fontSize="sm" color="fg.muted">Thompson Equipment Rentals</Text>
+                      <Text fontWeight="semibold">Sarah Martinez</Text>
+                      <Text fontSize="sm" color="fg.muted">Senior Engineer, TechCorp</Text>
                     </VStack>
                   </HStack>
                 </CardContent>
@@ -432,21 +584,17 @@ export default function HomePage() {
                     ))}
                   </HStack>
                   <Text color="fg.muted" mb="6" fontSize="md" lineHeight="relaxed">
-                    "Before FleetLink, we'd wait weeks for payment and constantly chase down
-                    paperwork. Now? Equipment rented out in under 2 hours, payment in 4 days. Our
-                    cash flow has never been better. This platform is a game-changer."
+                    "The AI-friendly design means our agents can integrate location features 
+                    without custom code. Plus, having the mobile app ready means we didn't need 
+                    to hire iOS/Android developers. Game changer."
                   </Text>
                   <HStack gap="3" alignItems="center">
                     <Avatar.Root size="md">
-                      <Avatar.Image
-                        src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=2070&auto=format&fit=crop"
-                        alt="Jose Martinez"
-                      />
-                      <Avatar.Fallback>JM</Avatar.Fallback>
+                      <Avatar.Fallback>JD</Avatar.Fallback>
                     </Avatar.Root>
                     <VStack gap="0" alignItems="start">
-                      <Text fontWeight="semibold">Jose Martinez</Text>
-                      <Text fontSize="sm" color="fg.muted">Total Construction Supply</Text>
+                      <Text fontWeight="semibold">James Davis</Text>
+                      <Text fontSize="sm" color="fg.muted">CTO, StartupXYZ</Text>
                     </VStack>
                   </HStack>
                 </CardContent>
@@ -462,25 +610,25 @@ export default function HomePage() {
           <FadeIn>
             <VStack gap="6" textAlign="center">
               <Heading as="h2" size={{ base: '3xl', md: '4xl' }} fontWeight="bold">
-                Ready to Book Equipment?
+                Ready to Ship Location Features?
               </Heading>
               <Text fontSize="lg" color="fg.muted" mb="8">
-                Get matched with a verified operator within 24 hours
+                Get your API key and start tracking locations in seconds
               </Text>
               <VStack gap="4" width="full">
                 <OutlineButton
-                  onClick={() => router.push('/rent')}
+                  onClick={() => router.push('/dashboard/keys?create=true')}
                   width="full"
                   size="lg"
                   fontWeight="bold"
                 >
-                  Book Equipment Now
+                  Create API Key Now
                   <ArrowRight className="ml-2" size={20} />
-                  </OutlineButton>
+                </OutlineButton>
                 <WordDivider word="or" />
-                <Link href="/submit" style={{ width: '100%' }}>
+                <Link href="/docs" style={{ width: '100%' }}>
                   <Button size="lg" variant="outline" width="full" fontSize="lg">
-                    Join as a Supplier
+                    Read the Documentation
                     <ArrowRight className="ml-2" size={20} />
                   </Button>
                 </Link>
