@@ -61,7 +61,30 @@ async function buildServer() {
     },
   });
 
+  // Health check endpoint
   app.get("/health", async () => ({ status: "ok" }));
+
+  // OpenAPI spec endpoint for Readme.com integration
+  app.get("/openapi.json", async (request, reply) => {
+    const spec = app.swagger();
+    reply.type("application/json").send(spec);
+  });
+
+  // Readme.com webhook endpoint for automatic spec updates
+  app.post("/readme/webhook", async (request, reply) => {
+    const readmeApiKey = process.env.README_API_KEY;
+    const providedKey = request.headers["x-readme-api-key"];
+
+    // Verify Readme.com API key if configured
+    if (readmeApiKey && providedKey !== readmeApiKey) {
+      reply.code(401);
+      return { error: "Invalid Readme.com API key" };
+    }
+
+    // Return the OpenAPI spec for Readme.com to consume
+    const spec = app.swagger();
+    reply.type("application/json").send(spec);
+  });
 
   await registerGroupRoutes(app);
   await registerApiKeyRoutes(app);

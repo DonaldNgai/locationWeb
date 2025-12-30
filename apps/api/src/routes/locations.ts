@@ -6,6 +6,7 @@ import { z } from "zod";
 // import { locations } from "../db/schema.js";
 import { locationBus } from "../services/bus.js";
 import { requireApiKey } from "../utils/api-key.js";
+import { zodToJsonSchemaFastify } from "../utils/zod-to-json-schema.js";
 
 const locationPayload = z.object({
   deviceId: z.string().min(3).max(128),
@@ -38,8 +39,8 @@ export async function registerLocationRoutes(app: FastifyInstance) {
       schema: {
         tags: ["Locations"],
         summary: "Submit a device location update",
-        body: locationPayload,
-        response: { 202: ingestionResponse },
+        body: zodToJsonSchemaFastify(locationPayload),
+        response: { 202: zodToJsonSchemaFastify(ingestionResponse) },
         security: [{ apiKey: [] }],
       } as DocumentedSchema,
     },

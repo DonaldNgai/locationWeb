@@ -6,6 +6,7 @@ import { z } from "zod";
 // import { db } from "../db/client.js";
 // import { groups, members } from "../db/schema.js";
 import { requireAuth } from "../utils/auth.js";
+import { zodToJsonSchemaFastify } from "../utils/zod-to-json-schema.js";
 
 // Drizzle removed - stub type
 type GroupRecord = any;
@@ -25,13 +26,15 @@ export async function registerGroupRoutes(app: FastifyInstance) {
       schema: {
         tags: ["Groups"],
         summary: "Create a new location group",
-        body: z.object({
-          name: z.string().min(3),
-          description: z.string().optional(),
-          apiBaseUrl: z.string().url().optional(),
-        }),
+        body: zodToJsonSchemaFastify(
+          z.object({
+            name: z.string().min(3),
+            description: z.string().optional(),
+            apiBaseUrl: z.string().url().optional(),
+          })
+        ),
         response: {
-          201: groupResponse,
+          201: zodToJsonSchemaFastify(groupResponse),
         },
       },
     },
@@ -66,7 +69,7 @@ export async function registerGroupRoutes(app: FastifyInstance) {
         tags: ["Groups"],
         summary: "List groups you own",
         response: {
-          200: z.object({ items: z.array(groupResponse) }),
+          200: zodToJsonSchemaFastify(z.object({ items: z.array(groupResponse) })),
         },
       },
     },
@@ -94,13 +97,17 @@ export async function registerGroupRoutes(app: FastifyInstance) {
       schema: {
         tags: ["Groups"],
         summary: "Submit a join request for a group",
-        params: z.object({ groupId: z.string().min(4) }),
-        body: z.object({
-          email: z.string().email(),
-          reason: z.string().max(500).optional(),
-        }),
+        params: zodToJsonSchemaFastify(z.object({ groupId: z.string().min(4) })),
+        body: zodToJsonSchemaFastify(
+          z.object({
+            email: z.string().email(),
+            reason: z.string().max(500).optional(),
+          })
+        ),
         response: {
-          202: z.object({ status: z.literal("pending"), memberId: z.string() }),
+          202: zodToJsonSchemaFastify(
+            z.object({ status: z.literal("pending"), memberId: z.string() })
+          ),
         },
       },
     },

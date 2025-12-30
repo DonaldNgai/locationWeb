@@ -6,6 +6,7 @@ import { z } from "zod";
 // import { apiKeys, groups } from "../db/schema.js";
 import { createApiKey } from "../services/api-keys.js";
 import { requireAuth } from "../utils/auth.js";
+import { zodToJsonSchemaFastify } from "../utils/zod-to-json-schema.js";
 
 const apiKeyResponse = z.object({
   id: z.string(),
@@ -21,10 +22,10 @@ export async function registerApiKeyRoutes(app: FastifyInstance) {
       schema: {
         tags: ["API Keys"],
         summary: "Issue a new API key",
-        params: z.object({ groupId: z.string().min(4) }),
-        body: z.object({ label: z.string().min(3) }),
+        params: zodToJsonSchemaFastify(z.object({ groupId: z.string().min(4) })),
+        body: zodToJsonSchemaFastify(z.object({ label: z.string().min(3) })),
         response: {
-          201: z.object({ apiKey: z.string() }),
+          201: zodToJsonSchemaFastify(z.object({ apiKey: z.string() })),
         },
       },
     },
@@ -54,9 +55,9 @@ export async function registerApiKeyRoutes(app: FastifyInstance) {
       schema: {
         tags: ["API Keys"],
         summary: "List API keys",
-        params: z.object({ groupId: z.string().min(4) }),
+        params: zodToJsonSchemaFastify(z.object({ groupId: z.string().min(4) })),
         response: {
-          200: z.object({ items: z.array(apiKeyResponse) }),
+          200: zodToJsonSchemaFastify(z.object({ items: z.array(apiKeyResponse) })),
         },
       },
     },
