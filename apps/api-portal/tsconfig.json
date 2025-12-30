@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -15,9 +19,15 @@
     "incremental": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"],
-      "@DonaldNgai/next-utils/*": ["./packages/next-utils/src/*"],
-      "@DonaldNgai/chakra-ui/*": ["./packages/ui/src/*"]
+      "@/*": [
+        "./*"
+      ],
+      "@DonaldNgai/next-utils/*": [
+        "./packages/next-utils/src/*"
+      ],
+      "@DonaldNgai/chakra-ui/*": [
+        "./packages/ui/src/*"
+      ]
     },
     "plugins": [
       {
@@ -25,7 +35,14 @@
       }
     ]
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
-
