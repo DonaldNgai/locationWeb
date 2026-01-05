@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Button,
   Input,
@@ -29,206 +29,217 @@ import {
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@DonaldNgai/chakra-ui';
 import {
   Loader2,
-  Plus,
-  Check,
-  ChevronDown,
   Users,
   UserPlus,
-  Clock,
-  Key,
+  ChevronDown,
+  Plus,
 } from 'lucide-react';
-import { createGroup } from '@/app/actions/keys';
 import {
   getGroupsWithDetails,
-  inviteUserToGroup,
   batchInviteUsersToGroups,
-  approvePendingRequest,
 } from '@/app/actions/groups';
-
-type PendingRequest = {
-  id: string;
-  userEmail: string;
-  userName: string | null;
-  createdAt: Date;
-};
-
-type ApiKey = {
-  id: string;
-  label: string;
-  createdAt: string;
-  lastUsedAt: string | null;
-  groupId?: string;
-};
+import { createGroup } from '@/app/actions/keys';
 
 type Group = {
   id: string;
   name: string;
   description: string | null;
-  pendingRequests: PendingRequest[];
-  apiKeys: ApiKey[];
-  open?: boolean;
+  pendingRequests: Array<{
+    id: string;
+    userEmail: string;
+    userName: string | null;
+    createdAt: Date;
+  }>;
+  apiKeys: Array<{
+    id: string;
+    label: string;
+    createdAt: string;
+    lastUsedAt: string | null;
+    groupId?: string;
+  }>;
 };
 
 export default function GroupsPage() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  // Create group form
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [newGroupName, setNewGroupName] = useState('');
-  const [newGroupDescription, setNewGroupDescription] = useState('');
-  const [creatingGroup, setCreatingGroup] = useState(false);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+  const [mounted, setMounted] = useState(false);
+  const isMountedRef = useRef(true);
 
-  // Invite form state (per group)
-  const [inviteStates, setInviteStates] = useState<Record<string, {
-    email: string;
-    inviting: boolean;
-    error: string | null;
-  }>>({});
-
-  // Batch invite
-  const [batchSelectedGroupIds, setBatchSelectedGroupIds] = useState<string[]>([]);
-  const [batchEmailInput, setBatchEmailInput] = useState('');
-  const [batchInviting, setBatchInviting] = useState(false);
-  const [batchInviteResult, setBatchInviteResult] = useState<{
+  // Invite form state
+  const [inviteEmailInput, setInviteEmailInput] = useState('');
+  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
+  const [inviting, setInviting] = useState(false);
+  const [inviteResult, setInviteResult] = useState<{
     success?: boolean;
     invited?: number;
     failed?: number;
     errors?: Array<{ email: string; error: string }>;
   } | null>(null);
 
-  // Approving requests
-  const [approvingRequestId, setApprovingRequestId] = useState<string | null>(null);
+  // Create group form state
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newGroupName, setNewGroupName] = useState('');
+  const [newGroupDescription, setNewGroupDescription] = useState('');
+  const [creatingGroup, setCreatingGroup] = useState(false);
 
   const loadGroups = async () => {
+    if (!isMountedRef.current) return;
     setLoading(true);
     setError(null);
-    const result = await getGroupsWithDetails();
-    if (result.error) {
-      setError(result.error);
+    try {
+      const result = await getGroupsWithDetails();
+      if (!isMountedRef.current) return;
+      if (result.error) {
+        setError(result.error);
+        setGroups([]);
+      } else {
+        setGroups(result.groups || []);
+        // Initialize open state for all groups as closed
+        const initialOpenState: Record<string, boolean> = {};
+        (result.groups || []).forEach((group) => {
+          initialOpenState[group.id] = false;
+        });
+        setOpenGroups(initialOpenState);
+      }
+    } catch (err) {
+      if (!isMountedRef.current) return;
+      setError('Failed to load groups');
       setGroups([]);
-    } else {
-      setGroups((result.groups || []).map(g => ({ ...g, open: false })));
+    } finally {
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
-    setLoading(false);
   };
 
   useEffect(() => {
+    setMounted(true);
+    isMountedRef.current = true;
     loadGroups();
+
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
+
+  const handleToggleGroup = (groupId: string) => {
+    setOpenGroups((prev) => ({
+      ...prev,
+      [groupId]: !prev[groupId],
+    }));
+  };
 
   const handleCreateGroup = async () => {
     if (!newGroupName.trim()) return;
 
+    if (!isMountedRef.current) return;
     setCreatingGroup(true);
     setError(null);
-    const result = await createGroup(newGroupName.trim(), newGroupDescription.trim() || undefined);
-    setCreatingGroup(false);
 
-    if (result.error) {
-      setError(result.error);
-    } else {
-      setNewGroupName('');
-      setNewGroupDescription('');
-      setShowCreateForm(false);
-      await loadGroups();
-    }
-  };
+    try {
+      const result = await createGroup(newGroupName.trim(), newGroupDescription.trim() || undefined);
+      if (!isMountedRef.current) return;
 
-  const handleInviteUser = async (groupId: string) => {
-    const state = inviteStates[groupId];
-    if (!state || !state.email.trim()) return;
-
-    setInviteStates(prev => ({
-      ...prev,
-      [groupId]: { ...prev[groupId], inviting: true, error: null },
-    }));
-
-    const result = await inviteUserToGroup(groupId, state.email.trim());
-
-    if (result.error) {
-      setInviteStates(prev => ({
-        ...prev,
-        [groupId]: { ...prev[groupId], inviting: false, error: result.error || null },
-      }));
-    } else {
-      setInviteStates(prev => ({
-        ...prev,
-        [groupId]: { email: '', inviting: false, error: null },
-      }));
-      await loadGroups();
+      if (result.error) {
+        setError(result.error);
+      } else {
+        setNewGroupName('');
+        setNewGroupDescription('');
+        setShowCreateForm(false);
+        // Reload groups to show the new group
+        await loadGroups();
+      }
+    } catch (err) {
+      if (!isMountedRef.current) return;
+      setError('Failed to create group');
+    } finally {
+      if (isMountedRef.current) {
+        setCreatingGroup(false);
+      }
     }
   };
 
   const handleBatchInvite = async () => {
-    if (batchSelectedGroupIds.length === 0 || !batchEmailInput.trim()) return;
+    if (selectedGroupIds.length === 0 || !inviteEmailInput.trim()) {
+      return;
+    }
 
-    const emails = batchEmailInput
+    // Parse comma-delimited emails
+    const emails = inviteEmailInput
       .split(',')
-      .map(e => e.trim())
-      .filter(e => e.length > 0);
+      .map((e) => e.trim())
+      .filter((e) => e.length > 0);
 
-    if (emails.length === 0) return;
+    if (emails.length === 0) {
+      return;
+    }
 
-    setBatchInviting(true);
-    setBatchInviteResult(null);
-    const result = await batchInviteUsersToGroups(emails, batchSelectedGroupIds);
-    setBatchInviting(false);
+    if (!isMountedRef.current) return;
+    setInviting(true);
+    setInviteResult(null);
 
-    setBatchInviteResult(result);
-    if (result.success) {
-      setBatchEmailInput('');
-      setBatchSelectedGroupIds([]);
-      await loadGroups();
+    try {
+      const result = await batchInviteUsersToGroups(emails, selectedGroupIds);
+      if (!isMountedRef.current) return;
+      setInviteResult(result);
+
+      if (result.success) {
+        setInviteEmailInput('');
+        setSelectedGroupIds([]);
+        // Delay reload slightly to allow Select dropdown to close
+        setTimeout(() => {
+          if (isMountedRef.current) {
+            loadGroups();
+          }
+        }, 100);
+      }
+    } catch (err) {
+      if (!isMountedRef.current) return;
+      setInviteResult({
+        success: false,
+        failed: emails.length,
+        errors: [{ email: '', error: 'An error occurred while sending invitations' }],
+      });
+    } finally {
+      if (isMountedRef.current) {
+        setInviting(false);
+      }
     }
   };
 
-  const handleApproveRequest = async (groupId: string, requestId: string) => {
-    setApprovingRequestId(requestId);
-    const result = await approvePendingRequest(requestId, groupId);
-    setApprovingRequestId(null);
-
-    if (result.error) {
-      setError(result.error);
-    } else {
-      await loadGroups();
+  const selectedGroupsText = useMemo(() => {
+    if (selectedGroupIds.length === 0) {
+      return 'Select groups...';
     }
-  };
+    if (selectedGroupIds.length === 1) {
+      return groups.find((g) => g.id === selectedGroupIds[0])?.name || '1 group selected';
+    }
+    return `${selectedGroupIds.length} groups selected`;
+  }, [selectedGroupIds, groups]);
 
-  const toggleGroup = (groupId: string) => {
-    setGroups(prev => prev.map(g => g.id === groupId ? { ...g, open: !g.open } : g));
-  };
-
+  // Format date consistently (client-side only to avoid hydration issues)
   const formatDate = (date: Date | string) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    if (!mounted) return '';
+    try {
+      const d = typeof date === 'string' ? new Date(date) : date;
+      if (isNaN(d.getTime())) return '';
+      return d.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
+    } catch {
+      return '';
+    }
   };
-
-  const batchSelectedGroupsText = batchSelectedGroupIds.length === 0
-    ? 'Select groups...'
-    : batchSelectedGroupIds.length === 1
-    ? groups.find(g => g.id === batchSelectedGroupIds[0])?.name || '1 group selected'
-    : `${batchSelectedGroupIds.length} groups selected`;
 
   return (
     <Box flex="1" maxW="6xl" w="full">
-      <HStack justify="space-between" mb={6}>
-        <Heading as="h1" size={{ base: 'lg', lg: 'xl' }} fontWeight="medium">
-          Groups
-        </Heading>
-        {!showCreateForm && (
-          <Button onClick={() => setShowCreateForm(true)} colorScheme="orange" size="sm">
-            <Plus className="mr-2 h-4 w-4" />
-            Create Group
-          </Button>
-        )}
-      </HStack>
+      <Heading as="h1" size={{ base: 'lg', lg: 'xl' }} fontWeight="medium" mb={6}>
+        Groups
+      </Heading>
 
       {error && (
         <Alert.Root status="error" borderRadius="md" mb={4}>
@@ -238,119 +249,38 @@ export default function GroupsPage() {
         </Alert.Root>
       )}
 
-      {showCreateForm && (
-        <Card mb={4}>
+      {/* Invite Users Section */}
+      {mounted && !loading && groups.length > 0 && (
+        <Card mb={6}>
           <CardHeader>
-            <CardTitle>Create New Group</CardTitle>
+            <CardTitle>Invite Users to Groups</CardTitle>
           </CardHeader>
           <CardContent>
             <VStack align="stretch" gap={4}>
               <Box>
                 <Text fontSize="sm" fontWeight="medium" mb={2}>
-                  Group Name
+                  Select Groups
                 </Text>
-                <Input
-                  placeholder="Enter group name"
-                  value={newGroupName}
-                  onChange={(e) => setNewGroupName(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleCreateGroup()}
-                />
-              </Box>
-              <Box>
-                <Text fontSize="sm" fontWeight="medium" mb={2}>
-                  Description (Optional)
-                </Text>
-                <Input
-                  placeholder="Enter group description"
-                  value={newGroupDescription}
-                  onChange={(e) => setNewGroupDescription(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleCreateGroup()}
-                />
-              </Box>
-              <HStack gap={2} justify="end">
-                <Button
-                  onClick={() => {
-                    setShowCreateForm(false);
-                    setNewGroupName('');
-                    setNewGroupDescription('');
-                  }}
-                  variant="outline"
-                  disabled={creatingGroup}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleCreateGroup}
-                  disabled={creatingGroup || !newGroupName.trim()}
-                  colorScheme="orange"
-                >
-                  {creatingGroup ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating...
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Create
-                    </>
-                  )}
-                </Button>
-              </HStack>
-            </VStack>
-          </CardContent>
-        </Card>
-      )}
-
-      {loading ? (
-        <Card>
-          <CardContent>
-            <VStack align="center" gap={4} py={8}>
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              <Text color="fg.muted">Loading groups...</Text>
-            </VStack>
-          </CardContent>
-        </Card>
-      ) : groups.length === 0 ? (
-        <Card>
-          <CardContent>
-            <VStack align="center" gap={4} py={8}>
-              <Users className="h-12 w-12 text-muted-foreground" />
-              <Text fontSize="lg" fontWeight="medium" color="fg.muted">
-                No Groups
-              </Text>
-              <Text fontSize="sm" color="fg.muted" textAlign="center">
-                You are not a member of any groups yet. Create your first group to get started.
-              </Text>
-            </VStack>
-          </CardContent>
-        </Card>
-      ) : (
-        <VStack align="stretch" gap={4}>
-          {/* Batch Invite Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Invite Users to Multiple Groups</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <VStack align="stretch" gap={4}>
-                <Box>
-                  <Text fontSize="sm" fontWeight="medium" mb={2}>
-                    Select Groups
-                  </Text>
-                  {/* @ts-ignore - Select.Root multiple selection type issue */}
+                {groups.length > 0 ? (
+                  /* @ts-ignore - Select.Root multiple selection type issue */
                   <Select.Root
+                    key={`select-${groups.length}-${groups.map(g => g.id).join(',')}`}
                     multiple
-                    value={batchSelectedGroupIds}
+                    value={selectedGroupIds}
+                    disabled={loading}
                     onValueChange={(e: any) => {
+                      if (!isMountedRef.current || loading) return;
                       const newValue = Array.isArray(e.value) ? e.value : [e.value];
-                      setBatchSelectedGroupIds(newValue.filter((v: any): v is string => typeof v === 'string'));
+                      setSelectedGroupIds(
+                        newValue.filter((v: any): v is string => typeof v === 'string')
+                      );
+                      setInviteResult(null);
                     }}
                   >
                     <SelectControl>
                       <SelectTrigger className="w-full">
                         <SelectValueText placeholder="Select groups...">
-                          {batchSelectedGroupsText}
+                          {selectedGroupsText}
                         </SelectValueText>
                       </SelectTrigger>
                     </SelectControl>
@@ -374,85 +304,198 @@ export default function GroupsPage() {
                       </SelectContent>
                     </SelectPositioner>
                   </Select.Root>
-                </Box>
-
-                <Box>
-                  <Text fontSize="sm" fontWeight="medium" mb={2}>
-                    User Emails (comma-separated)
+                ) : (
+                  <Text fontSize="sm" color="fg.muted">
+                    No groups available
                   </Text>
-                  <HStack gap={2}>
-                    <Input
-                      type="text"
-                      placeholder="user1@example.com, user2@example.com"
-                      value={batchEmailInput}
-                      onChange={(e) => {
-                        setBatchEmailInput(e.target.value);
-                        setBatchInviteResult(null);
-                      }}
-                      onKeyDown={(e) => e.key === 'Enter' && !batchInviting && handleBatchInvite()}
-                      disabled={batchInviting}
-                    />
-                    <Button
-                      onClick={handleBatchInvite}
-                      disabled={batchInviting || !batchEmailInput.trim() || batchSelectedGroupIds.length === 0}
-                      colorScheme="green"
-                      size="sm"
-                    >
-                      {batchInviting ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Inviting...
-                        </>
-                      ) : (
-                        <>
-                          <UserPlus className="mr-2 h-4 w-4" />
-                          Invite
-                        </>
-                      )}
-                    </Button>
-                  </HStack>
-                </Box>
-
-                {batchInviteResult && (
-                  <Alert.Root
-                    status={batchInviteResult.success ? "success" : "error"}
-                    borderRadius="md"
-                  >
-                    <AlertIndicator />
-                    <VStack align="start" gap={1} flex={1}>
-                      <AlertTitle>
-                        {batchInviteResult.success ? 'Success' : 'Error'}
-                      </AlertTitle>
-                      <AlertDescription>
-                        {batchInviteResult.success ? (
-                          <Text>
-                            Successfully invited {batchInviteResult.invited} user{batchInviteResult.invited !== 1 ? 's' : ''} to {batchSelectedGroupIds.length} group{batchSelectedGroupIds.length !== 1 ? 's' : ''}.
-                          </Text>
-                        ) : (
-                          <Text>An error occurred while sending invitations</Text>
-                        )}
-                        {batchInviteResult.errors && batchInviteResult.errors.length > 0 && (
-                          <Box mt={2}>
-                            <Text fontSize="xs" fontWeight="medium">Errors:</Text>
-                            {batchInviteResult.errors.map((error, idx) => (
-                              <Text key={idx} fontSize="xs" color="fg.muted">
-                                {error.email}: {error.error}
-                              </Text>
-                            ))}
-                          </Box>
-                        )}
-                      </AlertDescription>
-                    </VStack>
-                  </Alert.Root>
                 )}
-              </VStack>
-            </CardContent>
-          </Card>
+              </Box>
 
-          {/* Groups List */}
+            <Box>
+              <Text fontSize="sm" fontWeight="medium" mb={2}>
+                User Emails (comma-separated)
+              </Text>
+              <HStack gap={2}>
+                <Input
+                  type="text"
+                  placeholder="user1@example.com, user2@example.com"
+                  value={inviteEmailInput}
+                  onChange={(e) => {
+                    setInviteEmailInput(e.target.value);
+                    setInviteResult(null);
+                  }}
+                  onKeyDown={(e) => e.key === 'Enter' && !inviting && !loading && handleBatchInvite()}
+                  disabled={inviting || loading}
+                />
+                <Button
+                  onClick={handleBatchInvite}
+                  disabled={inviting || loading || !inviteEmailInput.trim() || selectedGroupIds.length === 0}
+                  colorScheme="green"
+                  size="sm"
+                >
+                  {inviting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Inviting...
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      Invite
+                    </>
+                  )}
+                </Button>
+              </HStack>
+            </Box>
+
+            {inviteResult && (
+              <Alert.Root
+                status={inviteResult.success ? 'success' : 'error'}
+                borderRadius="md"
+              >
+                <AlertIndicator />
+                <VStack align="start" gap={1} flex={1}>
+                  <AlertTitle>
+                    {inviteResult.success ? 'Success' : 'Error'}
+                  </AlertTitle>
+                  <AlertDescription>
+                    {inviteResult.success ? (
+                      <Text>
+                        Successfully invited {inviteResult.invited} user
+                        {inviteResult.invited !== 1 ? 's' : ''} to{' '}
+                        {selectedGroupIds.length} group
+                        {selectedGroupIds.length !== 1 ? 's' : ''}.
+                      </Text>
+                    ) : (
+                      <Text>An error occurred while sending invitations</Text>
+                    )}
+                    {inviteResult.errors && inviteResult.errors.length > 0 && (
+                      <Box mt={2}>
+                        <Text fontSize="xs" fontWeight="medium">
+                          Errors:
+                        </Text>
+                        {inviteResult.errors.map((error, idx) => (
+                          <Text key={idx} fontSize="xs" color="fg.muted">
+                            {error.email}: {error.error}
+                          </Text>
+                        ))}
+                      </Box>
+                    )}
+                  </AlertDescription>
+                </VStack>
+              </Alert.Root>
+            )}
+          </VStack>
+        </CardContent>
+      </Card>
+      )}
+
+      {/* Groups Accordion */}
+      {loading ? (
+        <Card>
+          <CardContent>
+            <VStack align="center" gap={4} py={8}>
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <Text color="fg.muted">Loading groups...</Text>
+            </VStack>
+          </CardContent>
+        </Card>
+      ) : groups.length === 0 && mounted ? (
+        <Card>
+          <CardContent>
+            <VStack align="center" gap={4} py={8}>
+              <Users className="h-12 w-12 text-muted-foreground" />
+              <Text fontSize="lg" fontWeight="medium" color="fg.muted">
+                No Groups
+              </Text>
+              <Text fontSize="sm" color="fg.muted" textAlign="center" mb={2}>
+                You are not a member of any groups yet. Create your first group to get started.
+              </Text>
+              {!showCreateForm ? (
+                <Button
+                  onClick={() => setShowCreateForm(true)}
+                  colorScheme="orange"
+                  size="sm"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Group
+                </Button>
+              ) : (
+                <Card w="full" maxW="md">
+                  <CardHeader>
+                    <CardTitle>Create New Group</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <VStack align="stretch" gap={4}>
+                      <Box>
+                        <Text fontSize="sm" fontWeight="medium" mb={2}>
+                          Group Name
+                        </Text>
+                        <Input
+                          placeholder="Enter group name"
+                          value={newGroupName}
+                          onChange={(e) => setNewGroupName(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && !creatingGroup && handleCreateGroup()}
+                          disabled={creatingGroup}
+                        />
+                      </Box>
+                      <Box>
+                        <Text fontSize="sm" fontWeight="medium" mb={2}>
+                          Description (Optional)
+                        </Text>
+                        <Input
+                          placeholder="Enter group description"
+                          value={newGroupDescription}
+                          onChange={(e) => setNewGroupDescription(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && !creatingGroup && handleCreateGroup()}
+                          disabled={creatingGroup}
+                        />
+                      </Box>
+                      <HStack gap={2} justify="end">
+                        <Button
+                          onClick={() => {
+                            setShowCreateForm(false);
+                            setNewGroupName('');
+                            setNewGroupDescription('');
+                          }}
+                          variant="outline"
+                          disabled={creatingGroup}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          onClick={handleCreateGroup}
+                          disabled={creatingGroup || !newGroupName.trim()}
+                          colorScheme="orange"
+                        >
+                          {creatingGroup ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Creating...
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="mr-2 h-4 w-4" />
+                              Create
+                            </>
+                          )}
+                        </Button>
+                      </HStack>
+                    </VStack>
+                  </CardContent>
+                </Card>
+              )}
+            </VStack>
+          </CardContent>
+        </Card>
+      ) : (
+        <VStack align="stretch" gap={4}>
           {groups.map((group) => (
             <Card key={group.id}>
-              <Collapsible open={group.open} onOpenChange={(open) => toggleGroup(group.id)}>
+              <Collapsible
+                open={openGroups[group.id] || false}
+                onOpenChange={(open) => handleToggleGroup(group.id)}
+              >
                 <CardHeader>
                   <CollapsibleTrigger asChild>
                     <Button variant="ghost" className="w-full p-0 h-auto" type="button">
@@ -466,7 +509,8 @@ export default function GroupsPage() {
                               </Text>
                               {group.apiKeys.length > 0 && (
                                 <Badge colorScheme="blue" variant="outline">
-                                  {group.apiKeys.length} API key{group.apiKeys.length !== 1 ? 's' : ''}
+                                  {group.apiKeys.length} API key
+                                  {group.apiKeys.length !== 1 ? 's' : ''}
                                 </Badge>
                               )}
                               {group.pendingRequests.length > 0 && (
@@ -484,7 +528,9 @@ export default function GroupsPage() {
                         </HStack>
                         <ChevronDown
                           size={20}
-                          className={`flex-shrink-0 transition-transform ${group.open ? 'rotate-180' : ''}`}
+                          className={`flex-shrink-0 transition-transform ${
+                            openGroups[group.id] ? 'rotate-180' : ''
+                          }`}
                         />
                       </HStack>
                     </Button>
@@ -493,114 +539,41 @@ export default function GroupsPage() {
 
                 <CollapsibleContent>
                   <CardContent pt={0}>
-                    <VStack align="stretch" gap={6}>
-                      {/* Invite User Section */}
-                      <Box>
-                        <Text fontSize="sm" fontWeight="medium" mb={3}>
-                          Invite User to Group
-                        </Text>
-                        {(() => {
-                          const inviteState = inviteStates[group.id] || { email: '', inviting: false, error: null };
-                          return (
-                            <>
-                              <HStack gap={2}>
-                                <Input
-                                  type="email"
-                                  placeholder="user@example.com"
-                                  value={inviteState.email}
-                                  onChange={(e) => {
-                                    setInviteStates(prev => ({
-                                      ...prev,
-                                      [group.id]: {
-                                        ...prev[group.id] || { email: '', inviting: false, error: null },
-                                        email: e.target.value,
-                                        error: null,
-                                      },
-                                    }));
-                                  }}
-                                  onKeyDown={(e) => e.key === 'Enter' && !inviteState.inviting && handleInviteUser(group.id)}
-                                  disabled={inviteState.inviting}
-                                />
-                                <Button
-                                  onClick={() => handleInviteUser(group.id)}
-                                  disabled={inviteState.inviting || !inviteState.email.trim()}
-                                  colorScheme="green"
-                                  size="sm"
-                                >
-                                  {inviteState.inviting ? (
-                                    <>
-                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                      Inviting...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <UserPlus className="mr-2 h-4 w-4" />
-                                      Invite
-                                    </>
-                                  )}
-                                </Button>
-                              </HStack>
-                              {inviteState.error && (
-                                <Alert.Root status="error" borderRadius="md" size="sm" mt={2}>
-                                  <AlertIndicator />
-                                  <AlertDescription fontSize="xs">{inviteState.error}</AlertDescription>
-                                </Alert.Root>
-                              )}
-                            </>
-                          );
-                        })()}
-                      </Box>
-
+                    <VStack align="stretch" gap={4}>
                       {/* API Keys Section */}
-                      <Box>
-                        <Text fontSize="sm" fontWeight="medium" mb={3}>
-                          API Keys
-                        </Text>
-                        {group.apiKeys.length === 0 ? (
-                          <Text fontSize="sm" color="fg.muted">
-                            No API keys for this group
+                      {group.apiKeys.length > 0 && (
+                        <Box>
+                          <Text fontSize="sm" fontWeight="medium" mb={3}>
+                            API Keys ({group.apiKeys.length})
                           </Text>
-                        ) : (
-                          <VStack align="stretch" gap={1.5}>
+                          <VStack align="stretch" gap={2}>
                             {group.apiKeys.map((apiKey) => (
-                              <Box key={apiKey.id} p={2} borderRadius="md" borderWidth="1px" bg="bg.muted">
-                                <HStack gap={2}>
-                                  <Key className="h-4 w-4 text-muted-foreground" />
-                                  <VStack align="start" gap={0.5} flex={1}>
-                                    <Text fontSize="sm" fontWeight="medium">
-                                      {apiKey.label}
-                                    </Text>
-                                    <Text fontSize="xs" color="fg.muted">
-                                      Created {formatDate(apiKey.createdAt)}
-                                    </Text>
-                                    {apiKey.lastUsedAt ? (
-                                      <Text fontSize="xs" color="fg.muted">
-                                        Last used {formatDate(apiKey.lastUsedAt)}
-                                      </Text>
-                                    ) : (
-                                      <Text fontSize="xs" color="fg.muted">
-                                        Never used
-                                      </Text>
-                                    )}
-                                  </VStack>
-                                </HStack>
+                              <Box
+                                key={apiKey.id}
+                                p={2}
+                                borderRadius="md"
+                                borderWidth="1px"
+                                bg="bg.muted"
+                              >
+                                <Text fontSize="sm" fontWeight="medium">
+                                  {apiKey.label}
+                                </Text>
+                                <Text fontSize="xs" color="fg.muted">
+                                  Created {formatDate(apiKey.createdAt)}
+                                </Text>
                               </Box>
                             ))}
                           </VStack>
-                        )}
-                      </Box>
+                        </Box>
+                      )}
 
                       {/* Pending Requests Section */}
-                      <Box>
-                        <Text fontSize="sm" fontWeight="medium" mb={3}>
-                          Pending Requests
-                        </Text>
-                        {group.pendingRequests.length === 0 ? (
-                          <Text fontSize="sm" color="fg.muted">
-                            No pending requests
+                      {group.pendingRequests.length > 0 && (
+                        <Box>
+                          <Text fontSize="sm" fontWeight="medium" mb={3}>
+                            Pending Requests ({group.pendingRequests.length})
                           </Text>
-                        ) : (
-                          <VStack align="stretch" gap={1.5}>
+                          <VStack align="stretch" gap={2}>
                             {group.pendingRequests.map((request) => (
                               <Box
                                 key={request.id}
@@ -609,48 +582,26 @@ export default function GroupsPage() {
                                 borderWidth="1px"
                                 bg="bg.muted"
                               >
-                                <HStack justify="space-between" align="start" gap={3}>
-                                  <VStack align="start" gap={0.5} flex={1}>
-                                    <HStack gap={2}>
-                                      <Clock className="h-4 w-4 text-muted-foreground" />
-                                      <Text fontSize="sm" fontWeight="medium">
-                                        {request.userName || request.userEmail}
-                                      </Text>
-                                      <Badge colorScheme="orange" variant="outline" size="sm">
-                                        Pending
-                                      </Badge>
-                                    </HStack>
-                                    <Text fontSize="xs" color="fg.muted" pl={6}>
-                                      {request.userEmail}
-                                    </Text>
-                                    <Text fontSize="xs" color="fg.muted" pl={6}>
-                                      Requested {formatDate(request.createdAt)}
-                                    </Text>
-                                  </VStack>
-                                  <Button
-                                    onClick={() => handleApproveRequest(group.id, request.id)}
-                                    disabled={approvingRequestId === request.id}
-                                    colorScheme="green"
-                                    size="sm"
-                                  >
-                                    {approvingRequestId === request.id ? (
-                                      <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Approving...
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Check className="mr-2 h-4 w-4" />
-                                        Approve
-                                      </>
-                                    )}
-                                  </Button>
-                                </HStack>
+                                <Text fontSize="sm" fontWeight="medium">
+                                  {request.userName || request.userEmail}
+                                </Text>
+                                <Text fontSize="xs" color="fg.muted">
+                                  {request.userEmail}
+                                </Text>
+                                <Text fontSize="xs" color="fg.muted">
+                                  Requested {formatDate(request.createdAt)}
+                                </Text>
                               </Box>
                             ))}
                           </VStack>
-                        )}
-                      </Box>
+                        </Box>
+                      )}
+
+                      {group.apiKeys.length === 0 && group.pendingRequests.length === 0 && (
+                        <Text fontSize="sm" color="fg.muted" textAlign="center" py={4}>
+                          No additional information for this group.
+                        </Text>
+                      )}
                     </VStack>
                   </CardContent>
                 </CollapsibleContent>
