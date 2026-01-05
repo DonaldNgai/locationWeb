@@ -24,6 +24,7 @@ import {
   Key,
   BarChart3,
   FileText,
+  Users,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -39,7 +40,6 @@ const navigation: { label: string; items: NavItem[] }[] = [
     label: 'Overview',
     items: [
       { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
-      { title: 'API Keys', url: '/dashboard/keys', icon: Key },
     ],
   },
   {
@@ -52,6 +52,7 @@ const navigation: { label: string; items: NavItem[] }[] = [
     label: 'Resources',
     items: [
       { title: 'API Documentation', url: '/dashboard/docs', icon: FileText },
+      { title: 'Groups', url: '/dashboard/groups', icon: Users },
     ],
   },
 ];

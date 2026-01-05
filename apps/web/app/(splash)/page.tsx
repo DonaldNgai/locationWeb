@@ -178,7 +178,7 @@ export default function HomePage() {
 
                   <HStack gap="4" flexWrap="wrap" justify={{ base: 'center', lg: 'start' }}>
                     <OutlineButton
-                      onClick={() => router.push('/dashboard/keys?create=true')}
+                      onClick={() => router.push('/dashboard')}
                       size="lg"
                       fontWeight="bold"
                       px="8"

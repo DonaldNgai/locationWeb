@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Box,
@@ -25,9 +25,16 @@ import {
   MapPin,
   ArrowRight,
   Plus,
+  Copy,
+  Check,
+  AlertCircle,
+  Trash2,
+  ChevronDown,
 } from 'lucide-react';
 import { OutlineButton } from '@DonaldNgai/chakra-ui';
 import Link from 'next/link';
+import { getApiKeys, createApiKey, deleteApiKey, getUserGroups, createGroup } from '@/app/actions/keys';
+import { Input, Checkbox, Alert, AlertIndicator, AlertTitle, AlertDescription, Popover, PopoverTrigger, PopoverContent } from '@chakra-ui/react';
 
 interface ApiKey {
   id: string;
@@ -36,11 +43,26 @@ interface ApiKey {
   lastUsedAt: string | null;
 }
 
+interface CreateApiKeyResult {
+  apiKey?: string;
+  id?: string;
+  label?: string;
+  error?: string;
+  status?: number;
+  created?: number;
+}
+
 interface UsageStats {
   totalRequests: number;
   requestsToday: number;
   activeDevices: number;
   dataPoints: number;
+}
+
+interface Group {
+  id: string;
+  name: string;
+  description: string | null;
 }
 
 export default function DashboardPage() {
@@ -53,18 +75,65 @@ export default function DashboardPage() {
     dataPoints: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState<string | null>(null);
+  const [newKey, setNewKey] = useState<string | null>(null);
+  const [showNewKey, setShowNewKey] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newKeyLabel, setNewKeyLabel] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
+  const [loadingGroups, setLoadingGroups] = useState(false);
+  const [showCreateGroupForm, setShowCreateGroupForm] = useState(false);
+  const [newGroupName, setNewGroupName] = useState('');
+  const [newGroupDescription, setNewGroupDescription] = useState('');
+  const [creatingGroup, setCreatingGroup] = useState(false);
+  const [groupSearchQuery, setGroupSearchQuery] = useState('');
+  const [isGroupPopoverOpen, setIsGroupPopoverOpen] = useState(false);
+  const popoverRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadDashboardData();
   }, []);
 
+  // Handle clicks outside the popover to close it
+  useEffect(() => {
+    if (!isGroupPopoverOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
+        setIsGroupPopoverOpen(false);
+        setGroupSearchQuery('');
+      }
+    };
+
+    // Add event listener with a small delay to avoid immediate closing
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 0);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isGroupPopoverOpen]);
+
   const loadDashboardData = async () => {
     try {
       // Load API keys
-      const keysResponse = await fetch('/api/keys');
-      if (keysResponse.ok) {
-        const keysData = await keysResponse.json();
-        setApiKeys(keysData.items || []);
+      const keysResult = await getApiKeys();
+      if (keysResult.items) {
+        setApiKeys(keysResult.items);
+      }
+
+      // Load user groups
+      const groupsResult = await getUserGroups();
+      if (groupsResult.groups) {
+        setGroups(groupsResult.groups);
+        // Auto-select all groups if none selected
+        if (selectedGroupIds.length === 0 && groupsResult.groups.length > 0) {
+          setSelectedGroupIds(groupsResult.groups.map(g => g.id));
+        }
       }
 
       // Load usage stats (mock for now - replace with actual API call)
@@ -113,6 +182,108 @@ export default function DashboardPage() {
     },
   ];
 
+  const handleCreateKey = async () => {
+    if (!newKeyLabel.trim()) {
+      return;
+    }
+
+    setCreating(true);
+    try {
+      const result: CreateApiKeyResult = await createApiKey(newKeyLabel.trim(), selectedGroupIds);
+      if (result.apiKey) {
+        setNewKey(result.apiKey);
+        setShowNewKey(true);
+        setNewKeyLabel('');
+        setSelectedGroupIds([]);
+        setShowCreateForm(false);
+        await loadDashboardData();
+        
+        // Show message if multiple keys were created
+        if (result.created && result.created > 1) {
+          setTimeout(() => {
+            alert(`Successfully created ${result.created} API keys (one for each selected group).`);
+          }, 500);
+        }
+      } else if (result.error) {
+        alert(`Failed to create API key: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error creating key:', error);
+      alert('Error creating API key. Please try again.');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleCreateGroup = async () => {
+    if (!newGroupName.trim()) {
+      return;
+    }
+
+    setCreatingGroup(true);
+    try {
+      const result = await createGroup(newGroupName.trim(), newGroupDescription.trim() || undefined);
+      if (result.group) {
+        setNewGroupName('');
+        setNewGroupDescription('');
+        setShowCreateGroupForm(false);
+        await loadDashboardData();
+        // Auto-select the newly created group
+        setSelectedGroupIds([result.group.id]);
+      } else if (result.error) {
+        alert(`Failed to create group: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error creating group:', error);
+      alert('Error creating group. Please try again.');
+    } finally {
+      setCreatingGroup(false);
+    }
+  };
+
+  const toggleGroupSelection = (groupId: string) => {
+    setSelectedGroupIds(prev => 
+      prev.includes(groupId)
+        ? prev.filter(id => id !== groupId)
+        : [...prev, groupId]
+    );
+  };
+
+  const filteredGroups = groups.filter(group =>
+    group.name.toLowerCase().includes(groupSearchQuery.toLowerCase()) ||
+    (group.description && group.description.toLowerCase().includes(groupSearchQuery.toLowerCase()))
+  );
+
+  const selectedGroupsText = selectedGroupIds.length === 0
+    ? 'Select groups...'
+    : selectedGroupIds.length === 1
+    ? groups.find(g => g.id === selectedGroupIds[0])?.name || '1 group selected'
+    : `${selectedGroupIds.length} groups selected`;
+
+  const handleDeleteKey = async (keyId: string) => {
+    if (!confirm('Are you sure you want to delete this API key? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const result = await deleteApiKey(keyId);
+      if (result.success) {
+        await loadDashboardData();
+      } else if (result.error) {
+        alert(`Failed to delete API key: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error deleting key:', error);
+      alert('Error deleting API key. Please try again.');
+    }
+  };
+
+  const copyToClipboard = (text: string, keyId: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(keyId);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
   const recentKeys = apiKeys
     .sort((a, b) => {
       const aTime = a.lastUsedAt ? new Date(a.lastUsedAt).getTime() : 0;
@@ -135,13 +306,15 @@ export default function DashboardPage() {
             </Text>
           </Box>
           <HStack gap={2}>
-            <OutlineButton
-              onClick={() => router.push('/dashboard/keys?create=true')}
-              size="md"
-            >
-              <Plus size={16} className="mr-2" />
-              Create API Key
-            </OutlineButton>
+            {!showCreateForm && (
+              <OutlineButton
+                onClick={() => setShowCreateForm(true)}
+                size="md"
+              >
+                <Plus size={16} className="mr-2" />
+                Create API Key
+              </OutlineButton>
+            )}
             <Button
               asChild
               variant="outline"
@@ -196,35 +369,378 @@ export default function DashboardPage() {
           })}
         </SimpleGrid>
 
+        {/* New Key Display */}
+        {newKey && showNewKey && (
+          <Card borderColor="green.500" borderWidth="2px">
+            <CardHeader>
+              <HStack justify="space-between" align="center">
+                <HStack gap={2}>
+                  <AlertCircle size={20} className="text-green-600" />
+                  <CardTitle color="green.600">API Key Created</CardTitle>
+                </HStack>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowNewKey(false)}
+                >
+                  Dismiss
+                </Button>
+              </HStack>
+            </CardHeader>
+            <CardBody>
+              <VStack align="stretch" gap={4}>
+                <Box>
+                  <Text fontSize="sm" color="fg.muted" mb={2}>
+                    Your API key has been created. Copy it now - you won't be able to see it again!
+                  </Text>
+                  <Box
+                    p={4}
+                    borderRadius="md"
+                    bg="bg.muted"
+                    fontFamily="mono"
+                    fontSize="sm"
+                    position="relative"
+                  >
+                    <Text>{newKey}</Text>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      position="absolute"
+                      top={2}
+                      right={2}
+                      onClick={() => copyToClipboard(newKey, 'new-key')}
+                    >
+                      {copied === 'new-key' ? (
+                        <Check size={16} className="text-green-600" />
+                      ) : (
+                        <Copy size={16} />
+                      )}
+                    </Button>
+                  </Box>
+                </Box>
+                <Text fontSize="xs" color="fg.muted">
+                  Use this key in the Authorization header: <code className="bg-bg-muted px-1 py-0.5 rounded">Authorization: Bearer {newKey.substring(0, 20)}...</code>
+                </Text>
+              </VStack>
+            </CardBody>
+          </Card>
+        )}
+
+        {/* Create API Key Form */}
+        {showCreateForm && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Create New API Key</CardTitle>
+            </CardHeader>
+            <CardBody>
+              <VStack align="stretch" gap={4}>
+                <Box>
+                  <Text fontSize="sm" fontWeight="medium" mb={2}>
+                    Label
+                  </Text>
+                  <Input
+                    placeholder="e.g., Production API Key, Development Key"
+                    value={newKeyLabel}
+                    onChange={(e) => setNewKeyLabel(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleCreateKey();
+                      }
+                    }}
+                  />
+                  <Text fontSize="xs" color="fg.muted" mt={1}>
+                    Give your API key a descriptive name to help you identify it later.
+                  </Text>
+                </Box>
+
+                {/* Group Selection */}
+                {loadingGroups ? (
+                  <Text color="fg.muted">Loading groups...</Text>
+                ) : groups.length === 0 ? (
+                  <Alert.Root status="warning" borderRadius="md">
+                    <AlertIndicator />
+                    <VStack align="start" gap={2} flex={1}>
+                      <AlertTitle>No Groups Found</AlertTitle>
+                      <AlertDescription>
+                        You need to be part of at least one group to create an API key. Create a group first.
+                      </AlertDescription>
+                      {!showCreateGroupForm && (
+                        <Button
+                          size="sm"
+                          onClick={() => setShowCreateGroupForm(true)}
+                          mt={2}
+                        >
+                          <Plus size={16} className="mr-2" />
+                          Create Group
+                        </Button>
+                      )}
+                    </VStack>
+                  </Alert.Root>
+                ) : (
+                  <Box>
+                    <Text fontSize="sm" fontWeight="medium" mb={2}>
+                      Associate with Groups
+                    </Text>
+                    <Text fontSize="xs" color="fg.muted" mb={3}>
+                      Select one or more groups to associate this API key with.
+                    </Text>
+                    <Box ref={popoverRef} position="relative">
+                      <Popover.Root 
+                        open={isGroupPopoverOpen} 
+                        onOpenChange={(open) => {
+                          setIsGroupPopoverOpen(open);
+                          if (!open) {
+                            setGroupSearchQuery('');
+                          }
+                        }}
+                      >
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-full justify-between"
+                            size="md"
+                          >
+                            <Text className="truncate flex-1 text-left">
+                              {selectedGroupsText}
+                            </Text>
+                            <ChevronDown
+                              size={16}
+                              className={`ml-2 transition-transform ${isGroupPopoverOpen ? 'rotate-180' : ''}`}
+                            />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent 
+                          className="w-[var(--reference-width)] p-0" 
+                          align="start"
+                        >
+                        <VStack align="stretch" gap={0}>
+                          {/* Search Input */}
+                          <Box p={3} borderBottomWidth="1px">
+                            <Input
+                              placeholder="Search groups..."
+                              value={groupSearchQuery}
+                              onChange={(e) => setGroupSearchQuery(e.target.value)}
+                              size="sm"
+                              autoFocus
+                            />
+                          </Box>
+                          
+                          {/* Group List */}
+                          <Box maxH="300px" overflowY="auto">
+                            {filteredGroups.length === 0 ? (
+                              <Box p={4} textAlign="center">
+                                <Text fontSize="sm" color="fg.muted">
+                                  {groupSearchQuery ? 'No groups found' : 'No groups available'}
+                                </Text>
+                              </Box>
+                            ) : (
+                              <VStack align="stretch" gap={0}>
+                                {filteredGroups.map((group) => (
+                                  <Box
+                                    key={group.id}
+                                    p={3}
+                                    _hover={{ bg: 'bg.muted' }}
+                                    cursor="pointer"
+                                    onClick={() => toggleGroupSelection(group.id)}
+                                  >
+                                    <HStack gap={2}>
+                                      <Checkbox.Root
+                                        checked={selectedGroupIds.includes(group.id)}
+                                        onCheckedChange={() => toggleGroupSelection(group.id)}
+                                      >
+                                        <Checkbox.Indicator />
+                                      </Checkbox.Root>
+                                      <VStack align="start" gap={0} flex={1}>
+                                        <Text fontSize="sm" fontWeight="medium">
+                                          {group.name}
+                                        </Text>
+                                        {group.description && (
+                                          <Text fontSize="xs" color="fg.muted">
+                                            {group.description}
+                                          </Text>
+                                        )}
+                                      </VStack>
+                                    </HStack>
+                                  </Box>
+                                ))}
+                              </VStack>
+                            )}
+                          </Box>
+                          
+                          {/* Footer with select all/none */}
+                          {filteredGroups.length > 0 && (
+                            <Box p={2} borderTopWidth="1px" bg="bg.muted">
+                              <HStack justify="space-between">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const allFilteredIds = filteredGroups.map(g => g.id);
+                                    const allSelected = allFilteredIds.every(id => selectedGroupIds.includes(id));
+                                    if (allSelected) {
+                                      setSelectedGroupIds(prev => prev.filter(id => !allFilteredIds.includes(id)));
+                                    } else {
+                                      setSelectedGroupIds(prev => [...new Set([...prev, ...allFilteredIds])]);
+                                    }
+                                  }}
+                                >
+                                  {filteredGroups.every(g => selectedGroupIds.includes(g.id))
+                                    ? 'Deselect All'
+                                    : 'Select All'}
+                                </Button>
+                                <Text fontSize="xs" color="fg.muted">
+                                  {selectedGroupIds.length} selected
+                                </Text>
+                              </HStack>
+                            </Box>
+                          )}
+                        </VStack>
+                      </PopoverContent>
+                    </Popover.Root>
+                    </Box>
+                    {selectedGroupIds.length === 0 && (
+                      <Text fontSize="xs" color="orange.600" mt={2}>
+                        Please select at least one group.
+                      </Text>
+                    )}
+                    {selectedGroupIds.length > 0 && (
+                      <Box mt={2}>
+                        <Text fontSize="xs" color="fg.muted" mb={1}>
+                          Selected groups:
+                        </Text>
+                        <HStack gap={1} flexWrap="wrap">
+                          {selectedGroupIds.map((groupId) => {
+                            const group = groups.find(g => g.id === groupId);
+                            if (!group) return null;
+                            return (
+                              <Box
+                                key={groupId}
+                                px={2}
+                                py={1}
+                                borderRadius="md"
+                                bg="blue.100"
+                                className="dark:bg-blue-900"
+                                fontSize="xs"
+                                display="flex"
+                                alignItems="center"
+                                gap={1}
+                              >
+                                <Text>{group.name}</Text>
+                                <Button
+                                  variant="ghost"
+                                  size="xs"
+                                  p={0}
+                                  minW="auto"
+                                  h="auto"
+                                  onClick={() => toggleGroupSelection(groupId)}
+                                >
+                                  <Trash2 size={12} />
+                                </Button>
+                              </Box>
+                            );
+                          })}
+                        </HStack>
+                      </Box>
+                    )}
+                  </Box>
+                )}
+
+                {/* Create Group Form */}
+                {showCreateGroupForm && (
+                  <Box p={4} borderRadius="md" borderWidth="1px" bg="bg.muted">
+                    <VStack align="stretch" gap={3}>
+                      <Text fontSize="sm" fontWeight="medium">
+                        Create New Group
+                      </Text>
+                      <Box>
+                        <Text fontSize="xs" fontWeight="medium" mb={1}>
+                          Group Name
+                        </Text>
+                        <Input
+                          placeholder="e.g., Production, Development, Team Alpha"
+                          value={newGroupName}
+                          onChange={(e) => setNewGroupName(e.target.value)}
+                          size="sm"
+                        />
+                      </Box>
+                      <Box>
+                        <Text fontSize="xs" fontWeight="medium" mb={1}>
+                          Description (Optional)
+                        </Text>
+                        <Input
+                          placeholder="Brief description of this group"
+                          value={newGroupDescription}
+                          onChange={(e) => setNewGroupDescription(e.target.value)}
+                          size="sm"
+                        />
+                      </Box>
+                      <HStack gap={2}>
+                        <Button
+                          size="sm"
+                          onClick={handleCreateGroup}
+                          disabled={!newGroupName.trim() || creatingGroup}
+                        >
+                          {creatingGroup ? 'Creating...' : 'Create Group'}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setShowCreateGroupForm(false);
+                            setNewGroupName('');
+                            setNewGroupDescription('');
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </HStack>
+                    </VStack>
+                  </Box>
+                )}
+
+                <HStack gap={2}>
+                  <OutlineButton
+                    onClick={handleCreateKey}
+                    disabled={!newKeyLabel.trim() || creating || groups.length === 0 || selectedGroupIds.length === 0}
+                    size="md"
+                  >
+                    {creating ? 'Creating...' : 'Create API Key'}
+                  </OutlineButton>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setShowCreateForm(false);
+                      setNewKeyLabel('');
+                      setSelectedGroupIds([]);
+                      setShowCreateGroupForm(false);
+                    }}
+                    size="md"
+                  >
+                    Cancel
+                  </Button>
+                </HStack>
+              </VStack>
+            </CardBody>
+          </Card>
+        )}
+
         {/* Recent Activity & Quick Actions */}
         <SimpleGrid columns={{ base: 1, lg: 2 }} gap={6}>
           {/* Recent API Keys */}
           <Card>
             <CardHeader>
-              <HStack justify="space-between" align="center">
-                <CardTitle>Recent API Keys</CardTitle>
-                <Button
-                  asChild
-                  variant="ghost"
-                  size="sm"
-                >
-                  <Link href="/dashboard/keys">
-                    View All
-                    <ArrowRight size={14} className="ml-1" />
-                  </Link>
-                </Button>
-              </HStack>
+              <CardTitle>Your API Keys</CardTitle>
             </CardHeader>
             <CardBody>
               {loading ? (
                 <Text color="fg.muted">Loading...</Text>
-              ) : recentKeys.length === 0 ? (
+              ) : apiKeys.length === 0 ? (
                 <VStack gap={4} py={8}>
                   <Text color="fg.muted" textAlign="center">
                     No API keys yet. Create your first API key to get started.
                   </Text>
                   <OutlineButton
-                    onClick={() => router.push('/dashboard/keys?create=true')}
+                    onClick={() => setShowCreateForm(true)}
                     size="sm"
                   >
                     <Plus size={16} className="mr-2" />
@@ -233,40 +749,76 @@ export default function DashboardPage() {
                 </VStack>
               ) : (
                 <VStack align="stretch" gap={3}>
-                  {recentKeys.map((key) => (
+                  {apiKeys.map((key) => (
                     <Box
                       key={key.id}
-                      p={3}
+                      p={4}
                       borderRadius="md"
                       borderWidth="1px"
                       _hover={{ bg: 'bg.muted' }}
                     >
-                      <HStack justify="space-between" align="start">
-                        <VStack align="start" gap={1}>
-                          <Text fontWeight="medium">{key.label}</Text>
+                      <HStack justify="space-between" align="start" flexWrap="wrap" gap={4}>
+                        <VStack align="start" gap={1} flex={1}>
+                          <Text fontWeight="semibold">{key.label}</Text>
                           <Text fontSize="xs" color="fg.muted">
-                            Created {new Date(key.createdAt).toLocaleDateString()}
+                            Created {new Date(key.createdAt).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                            })}
                           </Text>
                           {key.lastUsedAt && (
                             <Text fontSize="xs" color="fg.muted">
-                              Last used {new Date(key.lastUsedAt).toLocaleDateString()}
+                              Last used {new Date(key.lastUsedAt).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
                             </Text>
                           )}
+                          {!key.lastUsedAt && (
+                            <Box
+                              px={2}
+                              py={0.5}
+                              borderRadius="md"
+                              bg="yellow.100"
+                              className="dark:bg-yellow-900 dark:text-yellow-300"
+                              color="yellow.700"
+                              fontSize="xs"
+                              fontWeight="medium"
+                              display="inline-block"
+                              mt={1}
+                            >
+                              Never Used
+                            </Box>
+                          )}
+                          <Text fontSize="xs" color="fg.muted" fontFamily="mono">
+                            ID: {key.id}
+                          </Text>
                         </VStack>
-                        {!key.lastUsedAt && (
-                          <Box
-                            px={2}
-                            py={1}
-                            borderRadius="md"
-                            bg="yellow.100"
-                            className="dark:bg-yellow-900 dark:text-yellow-300"
-                            color="yellow.700"
-                            fontSize="xs"
-                            fontWeight="medium"
+                        <HStack gap={2}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyToClipboard(key.id, key.id)}
                           >
-                            New
-                          </Box>
-                        )}
+                            {copied === key.id ? (
+                              <Check size={16} className="text-green-600" />
+                            ) : (
+                              <Copy size={16} />
+                            )}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            colorScheme="red"
+                            onClick={() => handleDeleteKey(key.id)}
+                          >
+                            <Trash2 size={16} />
+                          </Button>
+                        </HStack>
                       </HStack>
                     </Box>
                   ))}
