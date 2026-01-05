@@ -141,7 +141,7 @@ async function findOrEnsureUserWithActiveGroup(
   return { dbUser, groupId };
 }
 
-type Group = {
+export type Group = {
   id: string;
   name: string;
   description: string | null;

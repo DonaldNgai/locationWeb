@@ -23,15 +23,6 @@ type BatchInviteResult = {
   status?: number;
 };
 
-type BatchInviteResult = {
-  success?: boolean;
-  invited?: number; // Number of successful invitations
-  failed?: number; // Number of failed invitations
-  errors?: Array<{ email: string; error: string }>;
-  error?: string;
-  status?: number;
-};
-
 type PendingRequest = {
   id: string;
   userEmail: string;
@@ -250,6 +241,108 @@ export async function inviteUserToGroup(
     };
   } catch (error) {
     console.error('Error inviting user to group:', error);
+    return {
+      error: 'Internal server error',
+      status: 500,
+    };
+  }
+}
+
+type ApprovePendingRequestResult = {
+  success?: boolean;
+  error?: string;
+  status?: number;
+};
+
+/**
+ * Server action to approve a pending membership request
+ */
+export async function approvePendingRequest(
+  requestId: string,
+  groupId: string
+): Promise<ApprovePendingRequestResult> {
+  try {
+    const currentUser = await getCurrentUserFullDetails(auth0);
+    if (!currentUser?.email) {
+      return {
+        error: 'Unauthorized',
+        status: 401,
+      };
+    }
+
+    if (!requestId || typeof requestId !== 'string') {
+      return {
+        error: 'Request ID is required',
+        status: 400,
+      };
+    }
+
+    if (!groupId || typeof groupId !== 'string') {
+      return {
+        error: 'Group ID is required',
+        status: 400,
+      };
+    }
+
+    // Verify current user has access to this group
+    const currentDbUser = await prisma.user.findUnique({
+      where: { email: currentUser.email },
+      include: {
+        groupMemberships: {
+          where: {
+            status: 'active',
+            groupId,
+          },
+        },
+      },
+    });
+
+    if (!currentDbUser || currentDbUser.groupMemberships.length === 0) {
+      return {
+        error: 'You do not have access to this group',
+        status: 403,
+      };
+    }
+
+    // Verify the request exists and belongs to this group
+    const membership = await prisma.groupMember.findUnique({
+      where: { id: requestId },
+    });
+
+    if (!membership) {
+      return {
+        error: 'Request not found',
+        status: 404,
+      };
+    }
+
+    if (membership.groupId !== groupId) {
+      return {
+        error: 'Request does not belong to this group',
+        status: 403,
+      };
+    }
+
+    if (membership.status !== 'pending') {
+      return {
+        error: 'Request is not pending',
+        status: 400,
+      };
+    }
+
+    // Update the membership status to active
+    await prisma.groupMember.update({
+      where: { id: requestId },
+      data: {
+        status: 'active',
+      },
+    });
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error('Error approving pending request:', error);
     return {
       error: 'Internal server error',
       status: 500,

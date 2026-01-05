@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Button,
   Input,
@@ -18,10 +18,13 @@ import {
   AlertDescription,
   HStack,
   Badge,
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-  Checkbox,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValueText,
+  SelectControl,
+  SelectPositioner,
 } from '@chakra-ui/react';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@DonaldNgai/chakra-ui';
 import {
@@ -37,7 +40,8 @@ import {
   Key,
 } from 'lucide-react';
 import { getUserGroups, createGroup, type Group } from '@/app/actions/keys';
-import { inviteUserToGroup, getPendingRequestsForGroup, verifyUserExists, getApiKeysForGroup, batchInviteUsersToGroups } from '@/app/actions/groups';
+import { inviteUserToGroup, getPendingRequestsForGroup, verifyUserExists, getApiKeysForGroup, batchInviteUsersToGroups, approvePendingRequest } from '@/app/actions/groups';
+import { supabase } from '@/lib/supabase/client';
 
 type PendingRequest = {
   id: string;
@@ -78,6 +82,7 @@ export default function GroupsPage() {
   }>>({});
   const [loadingRequests, setLoadingRequests] = useState<Set<string>>(new Set());
   const [loadingApiKeys, setLoadingApiKeys] = useState<Set<string>>(new Set());
+  const [approvingRequests, setApprovingRequests] = useState<Set<string>>(new Set());
   
   // Batch invite state
   const [batchSelectedGroupIds, setBatchSelectedGroupIds] = useState<string[]>([]);
@@ -87,8 +92,6 @@ export default function GroupsPage() {
   const [batchVerificationErrors, setBatchVerificationErrors] = useState<Array<{ email: string; error: string }>>([]);
   const [batchInviting, setBatchInviting] = useState(false);
   const [batchInviteResult, setBatchInviteResult] = useState<{ success?: boolean; invited?: number; failed?: number; errors?: Array<{ email: string; error: string }> } | null>(null);
-  const [batchGroupSearchQuery, setBatchGroupSearchQuery] = useState('');
-  const [isBatchGroupPopoverOpen, setIsBatchGroupPopoverOpen] = useState(false);
 
   const loadGroups = async () => {
     setLoading(true);
@@ -98,9 +101,9 @@ export default function GroupsPage() {
       setError(result.error);
       setGroups([]);
     } else {
-      const groupsWithOpen = (result.groups || []).map((group, index) => ({
+      const groupsWithOpen = (result.groups || []).map((group) => ({
         ...group,
-        open: index === 0, // First group open by default
+        open: false, // All groups collapsed by default
       }));
       setGroups(groupsWithOpen);
     }
@@ -111,40 +114,48 @@ export default function GroupsPage() {
     loadGroups();
   }, []);
 
-  // Load pending requests and API keys for each group
+  // Load pending requests and API keys for each group (only once when groups are first loaded)
   useEffect(() => {
+    let mounted = true;
+    
     const loadGroupData = async () => {
       for (const group of groups) {
-        // Load pending requests
-        if (!loadingRequests.has(group.id)) {
+        if (!mounted) break;
+        
+        // Load pending requests (only if not already loaded)
+        if (!group.pendingRequests && !loadingRequests.has(group.id)) {
           setLoadingRequests(prev => new Set(prev).add(group.id));
           const requestsResult = await getPendingRequestsForGroup(group.id);
-          if (requestsResult.requests) {
+          if (mounted && requestsResult.requests) {
             setGroups(prev => prev.map(g =>
               g.id === group.id ? { ...g, pendingRequests: requestsResult.requests } : g
             ));
           }
-          setLoadingRequests(prev => {
-            const next = new Set(prev);
-            next.delete(group.id);
-            return next;
-          });
+          if (mounted) {
+            setLoadingRequests(prev => {
+              const next = new Set(prev);
+              next.delete(group.id);
+              return next;
+            });
+          }
         }
 
-        // Load API keys
-        if (!loadingApiKeys.has(group.id)) {
+        // Load API keys (only if not already loaded)
+        if (!group.apiKeys && !loadingApiKeys.has(group.id)) {
           setLoadingApiKeys(prev => new Set(prev).add(group.id));
           const apiKeysResult = await getApiKeysForGroup(group.id);
-          if (apiKeysResult.apiKeys) {
+          if (mounted && apiKeysResult.apiKeys) {
             setGroups(prev => prev.map(g =>
               g.id === group.id ? { ...g, apiKeys: apiKeysResult.apiKeys } : g
             ));
           }
-          setLoadingApiKeys(prev => {
-            const next = new Set(prev);
-            next.delete(group.id);
-            return next;
-          });
+          if (mounted) {
+            setLoadingApiKeys(prev => {
+              const next = new Set(prev);
+              next.delete(group.id);
+              return next;
+            });
+          }
         }
       }
     };
@@ -152,31 +163,91 @@ export default function GroupsPage() {
     if (groups.length > 0) {
       loadGroupData();
     }
-  }, [groups.length]); // Only run when groups are first loaded
 
-  // Set up polling for live updates
+    return () => {
+      mounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groups.length]); // Only run when number of groups changes (new groups added/removed)
+
+  // Set up real-time subscriptions for each group's pending requests
   useEffect(() => {
-    const interval = setInterval(() => {
-      // Reload requests and API keys for all groups
-      groups.forEach(async (group) => {
-        const requestsResult = await getPendingRequestsForGroup(group.id);
-        if (requestsResult.requests) {
-          setGroups(prev => prev.map(g =>
-            g.id === group.id ? { ...g, pendingRequests: requestsResult.requests } : g
-          ));
-        }
+    if (!supabase || !groups.length) {
+      return;
+    }
 
-        const apiKeysResult = await getApiKeysForGroup(group.id);
-        if (apiKeysResult.apiKeys) {
-          setGroups(prev => prev.map(g =>
-            g.id === group.id ? { ...g, apiKeys: apiKeysResult.apiKeys } : g
-          ));
+    const channels = groups.map((group) => {
+      if (!supabase) return null;
+      const channel = supabase
+        .channel(`group_members:${group.id}:pending`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'group_members',
+            filter: `group_id=eq.${group.id}`,
+          },
+          async (payload) => {
+            // Only handle changes for pending requests
+            if (payload.eventType === 'INSERT' && payload.new.status === 'pending') {
+              // Reload pending requests for this group
+              const requestsResult = await getPendingRequestsForGroup(group.id);
+              if (requestsResult.requests) {
+                setGroups(prev => prev.map(g =>
+                  g.id === group.id ? { ...g, pendingRequests: requestsResult.requests } : g
+                ));
+              }
+            } else if (payload.eventType === 'UPDATE') {
+              // If status changed from pending to active, remove from list
+              if (payload.old.status === 'pending' && payload.new.status !== 'pending') {
+                setGroups(prev => prev.map(g => {
+                  if (g.id === group.id && g.pendingRequests) {
+                    return {
+                      ...g,
+                      pendingRequests: g.pendingRequests.filter((req: PendingRequest) => req.id !== payload.old.id)
+                    };
+                  }
+                  return g;
+                }));
+              } else if (payload.new.status === 'pending') {
+                // Reload pending requests for this group
+                const requestsResult = await getPendingRequestsForGroup(group.id);
+                if (requestsResult.requests) {
+                  setGroups(prev => prev.map(g =>
+                    g.id === group.id ? { ...g, pendingRequests: requestsResult.requests } : g
+                  ));
+                }
+              }
+            } else if (payload.eventType === 'DELETE' && payload.old.status === 'pending') {
+              // Remove the deleted request from the list
+              setGroups(prev => prev.map(g => {
+                if (g.id === group.id && g.pendingRequests) {
+                    return {
+                      ...g,
+                      pendingRequests: g.pendingRequests.filter((req: PendingRequest) => req.id !== payload.old.id)
+                    };
+                }
+                return g;
+              }));
+            }
+          }
+        )
+        .subscribe();
+
+      return channel;
+    });
+
+    return () => {
+      if (!supabase) return;
+      channels.forEach(channel => {
+        if (channel && supabase) {
+          supabase.removeChannel(channel);
         }
       });
-    }, 5000); // Poll every 5 seconds
-
-    return () => clearInterval(interval);
-  }, [groups]);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groups.map(g => g.id).join(',')]); // Re-subscribe when group IDs change
 
   const handleCreateGroup = async () => {
     if (!newGroupName.trim()) {
@@ -270,6 +341,30 @@ export default function GroupsPage() {
     ));
   };
 
+  const handleApproveRequest = async (groupId: string, requestId: string) => {
+    setApprovingRequests(prev => new Set(prev).add(requestId));
+
+    const result = await approvePendingRequest(requestId, groupId);
+
+    setApprovingRequests(prev => {
+      const next = new Set(prev);
+      next.delete(requestId);
+      return next;
+    });
+
+    if (result.error) {
+      alert(`Error: ${result.error}`);
+    } else if (result.success) {
+      // Reload requests for this group
+      const requestsResult = await getPendingRequestsForGroup(groupId);
+      if (requestsResult.requests) {
+        setGroups(prev => prev.map(g =>
+          g.id === groupId ? { ...g, pendingRequests: requestsResult.requests } : g
+        ));
+      }
+    }
+  };
+
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -351,24 +446,14 @@ export default function GroupsPage() {
     }
   };
 
-  const toggleBatchGroupSelection = (groupId: string) => {
-    setBatchSelectedGroupIds(prev => 
-      prev.includes(groupId)
-        ? prev.filter(id => id !== groupId)
-        : [...prev, groupId]
-    );
-  };
-
-  const filteredBatchGroups = groups.filter(group =>
-    group.name.toLowerCase().includes(batchGroupSearchQuery.toLowerCase()) ||
-    (group.description && group.description.toLowerCase().includes(batchGroupSearchQuery.toLowerCase()))
-  );
-
   const batchSelectedGroupsText = batchSelectedGroupIds.length === 0
     ? 'Select groups...'
     : batchSelectedGroupIds.length === 1
     ? groups.find(g => g.id === batchSelectedGroupIds[0])?.name || '1 group selected'
     : `${batchSelectedGroupIds.length} groups selected`;
+
+  // Create a stable key for the Select component to force re-render when groups change
+  const selectKey = useMemo(() => groups.map(g => g.id).join(','), [groups]);
 
   return (
     <Box flex="1" maxW="6xl" w="full">
@@ -506,115 +591,43 @@ export default function GroupsPage() {
                   <Text fontSize="sm" fontWeight="medium" mb={2}>
                     Select Groups
                   </Text>
-                  <Popover.Root 
-                    open={isBatchGroupPopoverOpen} 
-                    onOpenChange={(open) => {
-                      setIsBatchGroupPopoverOpen(open);
-                      if (!open) {
-                        setBatchGroupSearchQuery('');
-                      }
+                  {/* @ts-ignore - Select.Root multiple selection type issue */}
+                  <Select.Root
+                    key={selectKey}
+                    multiple
+                    value={batchSelectedGroupIds}
+                    onValueChange={(e: any) => {
+                      const newValue = Array.isArray(e.value) ? e.value : [e.value];
+                      setBatchSelectedGroupIds(newValue.filter((v: any): v is string => typeof v === 'string'));
                     }}
                   >
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-between"
-                        size="md"
-                      >
-                        <Text className="truncate flex-1 text-left">
+                    <SelectControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValueText placeholder="Select groups...">
                           {batchSelectedGroupsText}
-                        </Text>
-                        <ChevronDown
-                          size={16}
-                          className={`ml-2 transition-transform ${isBatchGroupPopoverOpen ? 'rotate-180' : ''}`}
-                        />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[var(--reference-width)] p-0" align="start">
-                      <VStack align="stretch" gap={0}>
-                        {/* Search Input */}
-                        <Box p={3} borderBottomWidth="1px">
-                          <Input
-                            placeholder="Search groups..."
-                            value={batchGroupSearchQuery}
-                            onChange={(e) => setBatchGroupSearchQuery(e.target.value)}
-                            size="sm"
-                            autoFocus
-                          />
-                        </Box>
-                        
-                        {/* Group List */}
-                        <Box maxH="300px" overflowY="auto">
-                          {filteredBatchGroups.length === 0 ? (
-                            <Box p={4} textAlign="center">
-                              <Text fontSize="sm" color="fg.muted">
-                                {batchGroupSearchQuery ? 'No groups found' : 'No groups available'}
+                        </SelectValueText>
+                      </SelectTrigger>
+                    </SelectControl>
+                    <SelectPositioner>
+                      <SelectContent>
+                        {groups.map((group) => (
+                          // @ts-ignore - SelectItem value prop type issue
+                          <SelectItem key={group.id} value={group.id}>
+                            <VStack align="start" gap={0}>
+                              <Text fontSize="sm" fontWeight="medium">
+                                {group.name}
                               </Text>
-                            </Box>
-                          ) : (
-                            <VStack align="stretch" gap={0}>
-                              {filteredBatchGroups.map((group) => (
-                                <Box
-                                  key={group.id}
-                                  p={3}
-                                  _hover={{ bg: 'bg.muted' }}
-                                  cursor="pointer"
-                                  onClick={() => toggleBatchGroupSelection(group.id)}
-                                >
-                                  <HStack gap={2}>
-                                    <Checkbox.Root
-                                      checked={batchSelectedGroupIds.includes(group.id)}
-                                      onCheckedChange={() => toggleBatchGroupSelection(group.id)}
-                                    >
-                                      <Checkbox.Indicator />
-                                    </Checkbox.Root>
-                                    <VStack align="start" gap={0} flex={1}>
-                                      <Text fontSize="sm" fontWeight="medium">
-                                        {group.name}
-                                      </Text>
-                                      {group.description && (
-                                        <Text fontSize="xs" color="fg.muted">
-                                          {group.description}
-                                        </Text>
-                                      )}
-                                    </VStack>
-                                  </HStack>
-                                </Box>
-                              ))}
+                              {group.description && (
+                                <Text fontSize="xs" color="fg.muted">
+                                  {group.description}
+                                </Text>
+                              )}
                             </VStack>
-                          )}
-                        </Box>
-                        
-                        {/* Footer */}
-                        {filteredBatchGroups.length > 0 && (
-                          <Box p={2} borderTopWidth="1px" bg="bg.muted">
-                            <HStack justify="space-between">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  const allFilteredIds = filteredBatchGroups.map(g => g.id);
-                                  const allSelected = allFilteredIds.every(id => batchSelectedGroupIds.includes(id));
-                                  if (allSelected) {
-                                    setBatchSelectedGroupIds(prev => prev.filter(id => !allFilteredIds.includes(id)));
-                                  } else {
-                                    setBatchSelectedGroupIds(prev => [...new Set([...prev, ...allFilteredIds])]);
-                                  }
-                                }}
-                              >
-                                {filteredBatchGroups.every(g => batchSelectedGroupIds.includes(g.id))
-                                  ? 'Deselect All'
-                                  : 'Select All'}
-                              </Button>
-                              <Text fontSize="xs" color="fg.muted">
-                                {batchSelectedGroupIds.length} selected
-                              </Text>
-                            </HStack>
-                          </Box>
-                        )}
-                      </VStack>
-                    </PopoverContent>
-                  </Popover.Root>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </SelectPositioner>
+                  </Select.Root>
                 </Box>
 
                 {/* Email Input */}
@@ -745,7 +758,7 @@ export default function GroupsPage() {
                             )}
                           </>
                         ) : (
-                          <Text>{batchInviteResult.error}</Text>
+                          <Text>An error occurred while sending invitations</Text>
                         )}
                         {batchInviteResult.errors && batchInviteResult.errors.length > 0 && (
                           <Box mt={2}>
@@ -785,36 +798,38 @@ export default function GroupsPage() {
                     <CollapsibleTrigger asChild>
                       <Button
                         variant="ghost"
-                        className="w-full justify-between p-0 h-auto"
+                        className="w-full p-0 h-auto"
                         type="button"
                       >
-                        <HStack gap={3} flex={1} align="start">
-                          <Users className="h-5 w-5 mt-0.5" />
-                          <VStack align="start" gap={1} flex={1}>
-                            <HStack gap={2} align="center" flexWrap="wrap">
-                              <Text fontSize="lg" fontWeight="semibold">
-                                {group.name}
-                              </Text>
-                              {group.apiKeys && group.apiKeys.length > 0 && (
-                                <Badge colorScheme="blue" variant="outline">
-                                  {group.apiKeys.length} API key{group.apiKeys.length !== 1 ? 's' : ''}
-                                </Badge>
+                        <HStack gap={3} flex={1} align="start" justify="space-between" width="100%">
+                          <HStack gap={3} flex={1} align="start" minW={0}>
+                            <Users className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                            <VStack align="start" gap={1} flex={1} minW={0}>
+                              <HStack gap={2} align="center" flexWrap="wrap">
+                                <Text fontSize="lg" fontWeight="semibold">
+                                  {group.name}
+                                </Text>
+                                {group.apiKeys && group.apiKeys.length > 0 && (
+                                  <Badge colorScheme="blue" variant="outline">
+                                    {group.apiKeys.length} API key{group.apiKeys.length !== 1 ? 's' : ''}
+                                  </Badge>
+                                )}
+                                {group.pendingRequests && group.pendingRequests.length > 0 && (
+                                  <Badge colorScheme="orange" variant="outline">
+                                    {group.pendingRequests.length} pending
+                                  </Badge>
+                                )}
+                              </HStack>
+                              {group.description && (
+                                <Text fontSize="sm" color="fg.muted">
+                                  {group.description}
+                                </Text>
                               )}
-                              {group.pendingRequests && group.pendingRequests.length > 0 && (
-                                <Badge colorScheme="orange" variant="outline">
-                                  {group.pendingRequests.length} pending
-                                </Badge>
-                              )}
-                            </HStack>
-                            {group.description && (
-                              <Text fontSize="sm" color="fg.muted">
-                                {group.description}
-                              </Text>
-                            )}
-                          </VStack>
+                            </VStack>
+                          </HStack>
                           <ChevronDown
                             size={20}
-                            className={`transition-transform ${group.open ? 'rotate-180' : ''}`}
+                            className={`flex-shrink-0 transition-transform ${group.open ? 'rotate-180' : ''}`}
                           />
                         </HStack>
                       </Button>
@@ -875,7 +890,7 @@ export default function GroupsPage() {
                                 ) : (
                                   <>
                                     <Mail className="mr-2 h-4 w-4" />
-                                    Verify
+                                    Send Invitation
                                   </>
                                 )}
                               </Button>
@@ -943,17 +958,17 @@ export default function GroupsPage() {
                               No API keys for this group
                             </Text>
                           ) : (
-                            <VStack align="stretch" gap={2}>
-                              {group.apiKeys.map((apiKey) => (
+                            <VStack align="stretch" gap={1.5}>
+                              {group.apiKeys.map((apiKey: ApiKey) => (
                                 <Box
                                   key={apiKey.id}
-                                  p={3}
+                                  p={2}
                                   borderRadius="md"
                                   borderWidth="1px"
                                   bg="bg.muted"
                                 >
                                   <HStack justify="space-between" align="start">
-                                    <VStack align="start" gap={1} flex={1}>
+                                    <VStack align="start" gap={0.5} flex={1}>
                                       <HStack gap={2}>
                                         <Key className="h-4 w-4 text-muted-foreground" />
                                         <Text fontSize="sm" fontWeight="medium">
@@ -996,17 +1011,17 @@ export default function GroupsPage() {
                               No pending requests
                             </Text>
                           ) : (
-                            <VStack align="stretch" gap={2}>
-                              {group.pendingRequests.map((request) => (
+                            <VStack align="stretch" gap={1.5}>
+                              {group.pendingRequests.map((request: PendingRequest) => (
                                 <Box
                                   key={request.id}
-                                  p={3}
+                                  p={2}
                                   borderRadius="md"
                                   borderWidth="1px"
                                   bg="bg.muted"
                                 >
-                                  <HStack justify="space-between" align="start">
-                                    <VStack align="start" gap={1} flex={1}>
+                                  <HStack justify="space-between" align="start" gap={3}>
+                                    <VStack align="start" gap={0.5} flex={1}>
                                       <HStack gap={2}>
                                         <Clock className="h-4 w-4 text-muted-foreground" />
                                         <Text fontSize="sm" fontWeight="medium">
@@ -1023,6 +1038,25 @@ export default function GroupsPage() {
                                         Requested {formatDate(request.createdAt)}
                                       </Text>
                                     </VStack>
+                                    <Button
+                                      onClick={() => handleApproveRequest(group.id, request.id)}
+                                      disabled={approvingRequests.has(request.id)}
+                                      colorScheme="green"
+                                      size="sm"
+                                      variant="solid"
+                                    >
+                                      {approvingRequests.has(request.id) ? (
+                                        <>
+                                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                          Approving...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Check className="mr-2 h-4 w-4" />
+                                          Approve
+                                        </>
+                                      )}
+                                    </Button>
                                   </HStack>
                                 </Box>
                               ))}
