@@ -4,11 +4,12 @@
   "version": "0.1.0",
   "packageManager": "pnpm@9.12.0",
   "scripts": {
-    "dev": "turbo dev --filter=web",
+    "dev": "pnpm db:generate && turbo dev --filter=web",
     "build": "turbo build --filter=web",
     "lint": "turbo lint --filter=web",
     "test": "turbo test --filter=web",
     "format": "turbo format --filter=web",
+    "postinstall": "prisma generate --schema=db/schema.prisma",
     "db:generate": "prisma generate --schema=db/schema.prisma",
     "db:push": "prisma db push --schema=db/schema.prisma",
     "db:migrate": "prisma migrate dev --schema=db/schema.prisma",
