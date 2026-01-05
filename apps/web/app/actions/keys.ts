@@ -5,8 +5,12 @@ import { getAuthenticatedAccessToken } from '@DonaldNgai/next-utils/auth';
 import { auth0 } from '@/lib/auth/auth0';
 import { prisma } from '@/lib/db/prisma';
 import type { Prisma } from '@prisma/client';
-
-const BACKEND_API_URL = process.env.BACKEND_API_URL || 'http://localhost:3001';
+import {
+  getApiInternalApiKeys,
+  postApiInternalApiKeys,
+  deleteApiInternalApiKeysKeyId,
+} from '@/lib/generated/api';
+import type { AxiosError } from 'axios';
 
 type UserWithGroup = Prisma.UserGetPayload<{
   include: {
@@ -319,27 +323,25 @@ export async function getApiKeys(): Promise<GetApiKeysResult> {
     }
 
     // Call backend API to get API keys
-    const backendResponse = await fetch(`${BACKEND_API_URL}/api/internal/api-keys`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${tokenResult.token.token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!backendResponse.ok) {
-      const errorData = await backendResponse.json().catch(() => ({}));
+    try {
+      const response = await getApiInternalApiKeys(undefined, {
+        headers: {
+          Authorization: `Bearer ${tokenResult.token.token}`,
+        },
+      });
+      const data = response.data;
+      return {
+        items: data.items || [],
+      };
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      const errorData = axiosError.response?.data as { error?: string } | undefined;
       console.error('Backend API error:', errorData);
       return {
-        error: errorData.error || 'Failed to fetch API keys',
-        status: backendResponse.status,
+        error: errorData?.error || 'Failed to fetch API keys',
+        status: axiosError.response?.status || 500,
       };
     }
-
-    const data = await backendResponse.json();
-    return {
-      items: data.items || data || [],
-    };
   } catch (error) {
     console.error('Error fetching API keys:', error);
     return {
@@ -397,25 +399,24 @@ export async function deleteApiKey(id: string): Promise<DeleteApiKeyResult> {
 
     // Call backend API to delete API key
     // The backend will verify that the user has permission to delete this key
-    const backendResponse = await fetch(`${BACKEND_API_URL}/api/internal/api-keys/${id.trim()}`, {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${tokenResult.token.token}`,
-      },
-    });
-
-    if (!backendResponse.ok) {
-      const errorData = await backendResponse.json().catch(() => ({}));
+    try {
+      await deleteApiInternalApiKeysKeyId(id.trim(), {
+        headers: {
+          Authorization: `Bearer ${tokenResult.token.token}`,
+        },
+      });
+      return {
+        success: true,
+      };
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      const errorData = axiosError.response?.data as { error?: string } | undefined;
       console.error('Backend API error:', errorData);
       return {
-        error: errorData.error || 'Failed to delete API key',
-        status: backendResponse.status,
+        error: errorData?.error || 'Failed to delete API key',
+        status: axiosError.response?.status || 500,
       };
     }
-
-    return {
-      success: true,
-    };
   } catch (error) {
     console.error('Error deleting API key:', error);
     return {
@@ -512,35 +513,30 @@ export async function createApiKey(
 
     for (const groupId of groupsToUse) {
       try {
-        const backendResponse = await fetch(`${BACKEND_API_URL}/api/internal/api-keys`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${tokenResult.token.token}`,
-          },
-          body: JSON.stringify({
+        const response = await postApiInternalApiKeys(
+          {
             groupId,
             label: groupsToUse.length > 1 ? `${labelToUse} (${groupsToUse.indexOf(groupId) + 1})` : labelToUse,
-          }),
-        });
-
-        if (!backendResponse.ok) {
-          const errorData = await backendResponse.json().catch(() => ({}));
-          lastError = errorData.error || 'Failed to create API key';
-          console.error('Backend API error for group', groupId, ':', errorData);
-          continue; // Try next group
-        }
-
-        const apiKeyData = await backendResponse.json();
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${tokenResult.token.token}`,
+            },
+          }
+        );
+        const apiKeyData = response.data;
         createdKeys.push({
-          apiKey: apiKeyData.apiKey || apiKeyData.secret || apiKeyData.key,
-          id: apiKeyData.id,
+          apiKey: apiKeyData.apiKey,
+          id: apiKeyData.id || '',
           label: apiKeyData.label,
           groupId,
         });
       } catch (error) {
-        console.error('Error creating API key for group', groupId, ':', error);
-        lastError = 'Error creating API key';
+        const axiosError = error as AxiosError;
+        const errorData = axiosError.response?.data as { error?: string } | undefined;
+        lastError = errorData?.error || 'Failed to create API key';
+        console.error('Backend API error for group', groupId, ':', errorData);
+        continue; // Try next group
       }
     }
 

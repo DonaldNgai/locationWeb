@@ -5,8 +5,8 @@ import { getUserByEmail } from '@DonaldNgai/next-utils/auth/users';
 import { getAuthenticatedAccessToken } from '@DonaldNgai/next-utils/auth';
 import { auth0 } from '@/lib/auth/auth0';
 import { prisma } from '@/lib/db/prisma';
-
-const BACKEND_API_URL = process.env.BACKEND_API_URL || 'http://localhost:3001';
+import { getApiInternalApiKeys } from '@/lib/generated/api';
+import type { AxiosError } from 'axios';
 
 type InviteUserToGroupResult = {
   success?: boolean;
@@ -475,25 +475,24 @@ export async function getApiKeysForGroup(groupId: string): Promise<GetGroupApiKe
     }
 
     // Call backend API to get all API keys
-    const backendResponse = await fetch(`${BACKEND_API_URL}/api/internal/api-keys`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${tokenResult.token.token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!backendResponse.ok) {
-      const errorData = await backendResponse.json().catch(() => ({}));
-      console.error('Backend API error:', errorData);
+    let allApiKeys: any[] = [];
+    try {
+      const response = await getApiInternalApiKeys(undefined, {
+        headers: {
+          Authorization: `Bearer ${tokenResult.token.token}`,
+        },
+      });
+      const data = response.data;
+      allApiKeys = data.items || [];
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      const errorData = axiosError.response?.data as { error?: string } | undefined;
+      console.error('Error fetching API keys for group:', errorData);
       return {
-        error: errorData.error || 'Failed to fetch API keys',
-        status: backendResponse.status,
+        error: errorData?.error || 'Internal server error',
+        status: axiosError.response?.status || 500,
       };
     }
-
-    const data = await backendResponse.json();
-    const allApiKeys = data.items || data || [];
 
     // Filter API keys for this specific group
     // The backend API should return groupId in the response, but if not, we'll need to check the database
@@ -540,11 +539,13 @@ export async function getApiKeysForGroup(groupId: string): Promise<GetGroupApiKe
         groupId,
       })),
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching API keys for group:', error);
+    const status = error.response?.status || 500;
+    const errorData = error.response?.data || {};
     return {
-      error: 'Internal server error',
-      status: 500,
+      error: errorData.error || 'Internal server error',
+      status,
     };
   }
 }
@@ -710,6 +711,148 @@ export async function batchInviteUsersToGroups(
     };
   } catch (error) {
     console.error('Error in batch invite:', error);
+    return {
+      error: 'Internal server error',
+      status: 500,
+    };
+  }
+}
+
+type GroupWithDetails = {
+  id: string;
+  name: string;
+  description: string | null;
+  pendingRequests: PendingRequest[];
+  apiKeys: ApiKey[];
+};
+
+type GetGroupsWithDetailsResult = {
+  groups?: GroupWithDetails[];
+  error?: string;
+  status?: number;
+};
+
+/**
+ * Server action to fetch all user groups with pending requests and API keys in one query
+ */
+export async function getGroupsWithDetails(): Promise<GetGroupsWithDetailsResult> {
+  try {
+    const currentUser = await getCurrentUserFullDetails(auth0);
+    if (!currentUser?.email) {
+      return {
+        error: 'Unauthorized',
+        status: 401,
+      };
+    }
+
+    // Get access token for backend API
+    const tokenResult = await getAuthenticatedAccessToken(auth0);
+    if (!tokenResult.isValid || !tokenResult.token) {
+      return {
+        error: 'Failed to get access token',
+        status: 401,
+      };
+    }
+
+    // Find user with active group memberships
+    const dbUser = await prisma.user.findUnique({
+      where: { email: currentUser.email },
+      include: {
+        groupMemberships: {
+          where: {
+            status: 'active',
+          },
+          include: {
+            group: {
+              include: {
+                members: {
+                  where: { status: 'pending' },
+                  include: { user: true },
+                  orderBy: { createdAt: 'desc' },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!dbUser) {
+      return { groups: [] };
+    }
+
+    const groupIds = dbUser.groupMemberships.map((m) => m.group.id);
+
+    // Fetch API keys from backend
+    let allApiKeys: any[] = [];
+    try {
+      const response = await getApiInternalApiKeys(undefined, {
+        headers: {
+          Authorization: `Bearer ${tokenResult.token.token}`,
+        },
+      });
+      const data = response.data;
+      allApiKeys = data.items || [];
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      console.error('Error fetching API keys from backend:', axiosError.response?.data || error);
+      // Continue with empty array, will use database fallback
+    }
+
+    // Also get API keys from database as fallback
+    const dbApiKeys = await prisma.apiKey.findMany({
+      where: {
+        groupId: { in: groupIds },
+        revokedAt: null,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Combine groups with their data
+    const groups: GroupWithDetails[] = dbUser.groupMemberships.map((membership) => {
+      const group = membership.group;
+      
+      // Map pending requests
+      const pendingRequests: PendingRequest[] = group.members.map((member) => ({
+        id: member.id,
+        userEmail: member.user.email,
+        userName: member.user.name,
+        createdAt: member.createdAt,
+      }));
+
+      // Get API keys for this group
+      const groupApiKeysFromBackend = allApiKeys.filter((key: any) => key.groupId === group.id);
+      const groupApiKeysFromDb = dbApiKeys.filter((key) => key.groupId === group.id);
+      
+      // Use backend keys if available, otherwise fall back to DB keys
+      const apiKeys: ApiKey[] = groupApiKeysFromBackend.length > 0
+        ? groupApiKeysFromBackend.map((key: any) => ({
+            id: key.id,
+            label: key.label,
+            createdAt: key.createdAt,
+            lastUsedAt: key.lastUsedAt || null,
+            groupId: group.id,
+          }))
+        : groupApiKeysFromDb.map((key) => ({
+            id: key.id,
+            label: key.label,
+            createdAt: key.createdAt.toISOString(),
+            lastUsedAt: key.lastUsedAt?.toISOString() || null,
+            groupId: group.id,
+          }));
+
+      return {
+        id: group.id,
+        name: group.name,
+        description: group.description,
+        pendingRequests,
+        apiKeys,
+      };
+    });
+
+    return { groups };
+  } catch (error) {
+    console.error('Error fetching groups with details:', error);
     return {
       error: 'Internal server error',
       status: 500,
