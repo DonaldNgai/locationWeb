@@ -1,10 +1,7 @@
 'use client';
 
 import {
-  Portal,
-  Select,
   Spinner,
-  createListCollection,
   Accordion,
   Box,
   VStack,
@@ -17,11 +14,12 @@ import {
   Heading as CardTitle,
   HStack,
 } from '@chakra-ui/react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useAsyncRetry } from 'react-use';
 import { getGroupsWithDetails, approvePendingRequest, denyPendingRequest } from '@/app/actions/groups';
 import { createGroup, createApiKey } from '@/app/actions/keys';
-import { Plus, Key, Check, X } from 'lucide-react';
+import { Plus, Key, Check, X, UserPlus } from 'lucide-react';
+import { InviteDialog } from './invite-dialog';
 
 interface Group {
   id: string;
@@ -59,6 +57,9 @@ export default function GroupsPage() {
   // Request action state
   const [processingRequestId, setProcessingRequestId] = useState<string | null>(null);
 
+  // Invite dialog state
+  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+
   const state = useAsyncRetry(async (): Promise<Group[]> => {
     const result = await getGroupsWithDetails();
     if (result.error) {
@@ -66,14 +67,6 @@ export default function GroupsPage() {
     }
     return result.groups || [];
   }, []);
-
-  const collection = useMemo(() => {
-    return createListCollection({
-      items: state.value ?? [],
-      itemToString: (group: Group) => group.name,
-      itemToValue: (group: Group) => group.id,
-    });
-  }, [state.value]);
 
   const hasGroups = state.value && state.value.length > 0;
   const showGroupsContent = hasGroups && !showCreateForm;
@@ -187,30 +180,14 @@ export default function GroupsPage() {
       {showGroupsContent && (
         <>
           <HStack justify="space-between" align="center">
-            <Select.Root multiple collection={collection} size="sm" width="320px">
-              <Select.HiddenSelect />
-              <Select.Label>Select group</Select.Label>
-              <Select.Control>
-                <Select.Trigger>
-                  <Select.ValueText placeholder="Select group" />
-                </Select.Trigger>
-                <Select.IndicatorGroup>
-                  <Select.Indicator />
-                </Select.IndicatorGroup>
-              </Select.Control>
-              <Portal>
-                <Select.Positioner>
-                  <Select.Content>
-                    {collection.items.map((group: Group) => (
-                      <Select.Item item={group} key={group.id}>
-                        {group.name}
-                        <Select.ItemIndicator />
-                      </Select.Item>
-                    ))}
-                  </Select.Content>
-                </Select.Positioner>
-              </Portal>
-            </Select.Root>
+            <Button
+              onClick={() => setIsInviteDialogOpen(true)}
+              colorScheme="green"
+              size="sm"
+            >
+              <UserPlus className="mr-2 h-4 w-4" />
+              Invite Users
+            </Button>
             <Button
               onClick={() => setShowCreateForm(true)}
               colorScheme="orange"
@@ -220,6 +197,13 @@ export default function GroupsPage() {
               Create Group
             </Button>
           </HStack>
+
+          <InviteDialog
+            isOpen={isInviteDialogOpen}
+            onClose={() => setIsInviteDialogOpen(false)}
+            groups={state.value || []}
+            onSuccess={() => state.retry()}
+          />
 
           <Accordion.Root multiple>
             {state.value!.map((group) => (
