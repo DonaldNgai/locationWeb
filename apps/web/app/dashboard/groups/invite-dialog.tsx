@@ -43,10 +43,9 @@ export function InviteDialog({ isOpen, onClose, groups, onSuccess }: InviteDialo
     invited?: number;
     failed?: number;
     errors?: Array<{ email: string; error: string }>;
+    groupCount?: number;
   } | null>(null);
 
-
-  console.log('groups', groups);
   const groupsCollection = useMemo(() => {
     return createListCollection({
       items: groups,
@@ -74,9 +73,17 @@ export function InviteDialog({ isOpen, onClose, groups, onSuccess }: InviteDialo
     setInviting(true);
     setInviteResult(null);
 
+    // Store the group count before clearing state
+    const groupCount = selectedGroupIds.length;
+
     try {
       const result = await batchInviteUsersToGroups(emails, selectedGroupIds);
-      setInviteResult(result);
+      // Add group count to result for display
+      const resultWithGroupCount = {
+        ...result,
+        groupCount,
+      };
+      setInviteResult(resultWithGroupCount);
 
       if (result.success) {
         setInviteEmailInput('');
@@ -130,10 +137,8 @@ export function InviteDialog({ isOpen, onClose, groups, onSuccess }: InviteDialo
                   width="320px"
                   value={selectedGroupIds}
                   onValueChange={(e: any) => {
-                    console.log('onValueChange event:', e);
                     const newValue = Array.isArray(e.value) ? e.value : [e.value];
                     const filtered = newValue.filter((v: any): v is string => typeof v === 'string');
-                    console.log('Setting selectedGroupIds to:', filtered);
                     setSelectedGroupIds(filtered);
                     setInviteResult(null);
                   }}
@@ -191,10 +196,10 @@ export function InviteDialog({ isOpen, onClose, groups, onSuccess }: InviteDialo
                     <AlertDescription>
                       {inviteResult.success ? (
                         <Text>
-                          Successfully invited {inviteResult.invited} user
-                          {inviteResult.invited !== 1 ? 's' : ''} to{' '}
-                          {selectedGroupIds.length} group
-                          {selectedGroupIds.length !== 1 ? 's' : ''}.
+                          Successfully invited {inviteResult.invited || 0} user
+                          {(inviteResult.invited || 0) !== 1 ? 's' : ''} to{' '}
+                          {inviteResult.groupCount || 0} group
+                          {(inviteResult.groupCount || 0) !== 1 ? 's' : ''}.
                         </Text>
                       ) : (
                         <Text>An error occurred while sending invitations</Text>

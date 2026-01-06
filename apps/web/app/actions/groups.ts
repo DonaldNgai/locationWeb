@@ -5,7 +5,7 @@ import { getUserByEmail } from '@DonaldNgai/next-utils/auth/users';
 import { getAuthenticatedAccessToken } from '@DonaldNgai/next-utils/auth';
 import { auth0 } from '@/lib/auth/auth0';
 import { prisma } from '@/lib/db/prisma';
-import { getApiInternalApiKeys } from '@/lib/generated/api';
+import { getApiInternalApiKeys, postApiInternalGroupsGroupIdInvitations } from '@/lib/generated/api';
 import type { AxiosError } from 'axios';
 
 type InviteUserToGroupResult = {
@@ -679,6 +679,15 @@ export async function batchInviteUsersToGroups(
       };
     }
 
+    // Get access token for backend API
+    const tokenResult = await getAuthenticatedAccessToken(auth0);
+    if (!tokenResult.isValid || !tokenResult.token) {
+      return {
+        error: 'Failed to get access token',
+        status: 401,
+      };
+    }
+
     // Verify current user has access to all groups
     const currentDbUser = await prisma.user.findUnique({
       where: { email: currentUser.email },
@@ -749,10 +758,10 @@ export async function batchInviteUsersToGroups(
       const userId = verifyResult.user.id;
       let userInvited = false;
 
-      // Invite user to each group
+      // Create invitation for user in each group using the API
       for (const groupId of groupIds) {
         try {
-          // Check if membership already exists
+          // Check if user is already an active member
           const existingMembership = await prisma.groupMember.findUnique({
             where: {
               groupId_userId: {
@@ -762,37 +771,31 @@ export async function batchInviteUsersToGroups(
             },
           });
 
-          if (existingMembership) {
-            if (existingMembership.status === 'active') {
-              // Already a member, skip silently
-              continue;
-            }
-            // Update status to pending if it was inactive
-            await prisma.groupMember.update({
-              where: {
-                id: existingMembership.id,
-              },
-              data: {
-                status: 'pending',
-              },
-            });
-            userInvited = true;
-          } else {
-            // Create new pending membership
-            await prisma.groupMember.create({
-              data: {
-                groupId,
-                userId,
-                status: 'pending',
-              },
-            });
-            userInvited = true;
+          if (existingMembership && existingMembership.status === 'active') {
+            // Already a member, skip silently
+            continue;
           }
+
+          // Create invitation via API
+          await postApiInternalGroupsGroupIdInvitations(
+            groupId,
+            { userId },
+            {
+              headers: {
+                Authorization: `Bearer ${tokenResult.token.token}`,
+              },
+            }
+          );
+          userInvited = true;
         } catch (error) {
+          const axiosError = error as AxiosError;
+          const errorMessage = axiosError.response?.data
+            ? (axiosError.response.data as any)?.error || 'Failed to create invitation'
+            : 'Failed to create invitation';
           console.error(`Error inviting user ${trimmedEmail} to group ${groupId}:`, error);
           errors.push({
             email: trimmedEmail,
-            error: `Failed to invite to group ${groupId}`,
+            error: errorMessage,
           });
         }
       }
@@ -832,7 +835,8 @@ type GetGroupsWithDetailsResult = {
 };
 
 /**
- * Server action to fetch all user groups with pending requests and API keys in one query
+ * Server action to fetch all user groups with join requests (pending memberships) and API keys in one query.
+ * Note: This fetches join requests (when users request to join), not invitations (when admins invite users).
  */
 export async function getGroupsWithDetails(): Promise<GetGroupsWithDetailsResult> {
   try {

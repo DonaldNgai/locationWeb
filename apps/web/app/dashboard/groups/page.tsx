@@ -323,7 +323,7 @@ export default function GroupsPage() {
                       {group.pendingRequests.length > 0 && (
                         <Box>
                           <Text fontSize="sm" fontWeight="medium" mb={2}>
-                            Pending Requests ({group.pendingRequests.length})
+                            Join Requests ({group.pendingRequests.length})
                           </Text>
                           <VStack align="stretch" gap={2}>
                             {group.pendingRequests.map((request: Group['pendingRequests'][0]) => (
