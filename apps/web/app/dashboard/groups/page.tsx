@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useAsyncRetry } from 'react-use';
 import {
   Button,
   Input,
@@ -39,6 +40,7 @@ import {
   batchInviteUsersToGroups,
 } from '@/app/actions/groups';
 import { createGroup } from '@/app/actions/keys';
+import { format } from 'date-fns';
 
 type Group = {
   id: string;
@@ -60,12 +62,7 @@ type Group = {
 };
 
 export default function GroupsPage() {
-  const [groups, setGroups] = useState<Group[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
-  const [mounted, setMounted] = useState(false);
-  const isMountedRef = useRef(true);
 
   // Invite form state
   const [inviteEmailInput, setInviteEmailInput] = useState('');
@@ -83,46 +80,26 @@ export default function GroupsPage() {
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupDescription, setNewGroupDescription] = useState('');
   const [creatingGroup, setCreatingGroup] = useState(false);
+  const [createGroupError, setCreateGroupError] = useState<string | null>(null);
 
-  const loadGroups = async () => {
-    if (!isMountedRef.current) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await getGroupsWithDetails();
-      if (!isMountedRef.current) return;
-      if (result.error) {
-        setError(result.error);
-        setGroups([]);
-      } else {
-        setGroups(result.groups || []);
-        // Initialize open state for all groups as closed
-        const initialOpenState: Record<string, boolean> = {};
-        (result.groups || []).forEach((group) => {
-          initialOpenState[group.id] = false;
-        });
-        setOpenGroups(initialOpenState);
-      }
-    } catch (err) {
-      if (!isMountedRef.current) return;
-      setError('Failed to load groups');
-      setGroups([]);
-    } finally {
-      if (isMountedRef.current) {
-        setLoading(false);
-      }
+  const groupsState = useAsyncRetry(async (): Promise<Group[]> => {
+    const result = await getGroupsWithDetails();
+    if (result.error) {
+      throw new Error(result.error);
     }
-  };
-
-  useEffect(() => {
-    setMounted(true);
-    isMountedRef.current = true;
-    loadGroups();
-
-    return () => {
-      isMountedRef.current = false;
-    };
+    return result.groups || [];
   }, []);
+
+  // Initialize open state when groups load
+  useEffect(() => {
+    if (groupsState.value) {
+      const initialOpenState: Record<string, boolean> = {};
+      groupsState.value.forEach((group: Group) => {
+        initialOpenState[group.id] = false;
+      });
+      setOpenGroups(initialOpenState);
+    }
+  }, [groupsState.value]);
 
   const handleToggleGroup = (groupId: string) => {
     setOpenGroups((prev) => ({
@@ -134,30 +111,25 @@ export default function GroupsPage() {
   const handleCreateGroup = async () => {
     if (!newGroupName.trim()) return;
 
-    if (!isMountedRef.current) return;
     setCreatingGroup(true);
-    setError(null);
+    setCreateGroupError(null);
 
     try {
       const result = await createGroup(newGroupName.trim(), newGroupDescription.trim() || undefined);
-      if (!isMountedRef.current) return;
 
       if (result.error) {
-        setError(result.error);
+        setCreateGroupError(result.error);
       } else {
         setNewGroupName('');
         setNewGroupDescription('');
         setShowCreateForm(false);
         // Reload groups to show the new group
-        await loadGroups();
+        groupsState.retry();
       }
     } catch (err) {
-      if (!isMountedRef.current) return;
-      setError('Failed to create group');
+      setCreateGroupError('Failed to create group');
     } finally {
-      if (isMountedRef.current) {
-        setCreatingGroup(false);
-      }
+      setCreatingGroup(false);
     }
   };
 
@@ -176,13 +148,11 @@ export default function GroupsPage() {
       return;
     }
 
-    if (!isMountedRef.current) return;
     setInviting(true);
     setInviteResult(null);
 
     try {
       const result = await batchInviteUsersToGroups(emails, selectedGroupIds);
-      if (!isMountedRef.current) return;
       setInviteResult(result);
 
       if (result.success) {
@@ -190,22 +160,17 @@ export default function GroupsPage() {
         setSelectedGroupIds([]);
         // Delay reload slightly to allow Select dropdown to close
         setTimeout(() => {
-          if (isMountedRef.current) {
-            loadGroups();
-          }
+          groupsState.retry();
         }, 100);
       }
     } catch (err) {
-      if (!isMountedRef.current) return;
       setInviteResult({
         success: false,
         failed: emails.length,
         errors: [{ email: '', error: 'An error occurred while sending invitations' }],
       });
     } finally {
-      if (isMountedRef.current) {
-        setInviting(false);
-      }
+      setInviting(false);
     }
   };
 
@@ -214,26 +179,11 @@ export default function GroupsPage() {
       return 'Select groups...';
     }
     if (selectedGroupIds.length === 1) {
-      return groups.find((g) => g.id === selectedGroupIds[0])?.name || '1 group selected';
+      return groupsState.value?.find((g: Group) => g.id === selectedGroupIds[0])?.name || '1 group selected';
     }
     return `${selectedGroupIds.length} groups selected`;
-  }, [selectedGroupIds, groups]);
+  }, [selectedGroupIds, groupsState.value]);
 
-  // Format date consistently (client-side only to avoid hydration issues)
-  const formatDate = (date: Date | string) => {
-    if (!mounted) return '';
-    try {
-      const d = typeof date === 'string' ? new Date(date) : date;
-      if (isNaN(d.getTime())) return '';
-      return d.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      });
-    } catch {
-      return '';
-    }
-  };
 
   return (
     <Box flex="1" maxW="6xl" w="full">
@@ -241,16 +191,18 @@ export default function GroupsPage() {
         Groups
       </Heading>
 
-      {error && (
+      {(groupsState.error || createGroupError) && (
         <Alert.Root status="error" borderRadius="md" mb={4}>
           <AlertIndicator />
           <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription>
+            {groupsState.error?.message || createGroupError}
+          </AlertDescription>
         </Alert.Root>
       )}
 
       {/* Invite Users Section */}
-      {mounted && !loading && groups.length > 0 && (
+      {!groupsState.loading && groupsState.value && groupsState.value.length > 0 && (
         <Card mb={6}>
           <CardHeader>
             <CardTitle>Invite Users to Groups</CardTitle>
@@ -261,15 +213,15 @@ export default function GroupsPage() {
                 <Text fontSize="sm" fontWeight="medium" mb={2}>
                   Select Groups
                 </Text>
-                {groups.length > 0 ? (
+                {groupsState.value && groupsState.value.length > 0 ? (
                   /* @ts-ignore - Select.Root multiple selection type issue */
                   <Select.Root
-                    key={`select-${groups.length}-${groups.map(g => g.id).join(',')}`}
+                    key={`select-${groupsState.value.length}-${groupsState.value.map((g: Group) => g.id).join(',')}`}
                     multiple
                     value={selectedGroupIds}
-                    disabled={loading}
+                    disabled={groupsState.loading}
                     onValueChange={(e: any) => {
-                      if (!isMountedRef.current || loading) return;
+                      if (groupsState.loading) return;
                       const newValue = Array.isArray(e.value) ? e.value : [e.value];
                       setSelectedGroupIds(
                         newValue.filter((v: any): v is string => typeof v === 'string')
@@ -286,7 +238,7 @@ export default function GroupsPage() {
                     </SelectControl>
                     <SelectPositioner>
                       <SelectContent>
-                        {groups.map((group) => (
+                        {groupsState.value.map((group: Group) => (
                           // @ts-ignore - SelectItem value prop type issue
                           <SelectItem key={group.id} value={group.id}>
                             <VStack align="start" gap={0}>
@@ -324,12 +276,12 @@ export default function GroupsPage() {
                     setInviteEmailInput(e.target.value);
                     setInviteResult(null);
                   }}
-                  onKeyDown={(e) => e.key === 'Enter' && !inviting && !loading && handleBatchInvite()}
-                  disabled={inviting || loading}
+                  onKeyDown={(e) => e.key === 'Enter' && !inviting && !groupsState.loading && handleBatchInvite()}
+                  disabled={inviting || groupsState.loading}
                 />
                 <Button
                   onClick={handleBatchInvite}
-                  disabled={inviting || loading || !inviteEmailInput.trim() || selectedGroupIds.length === 0}
+                  disabled={inviting || groupsState.loading || !inviteEmailInput.trim() || selectedGroupIds.length === 0}
                   colorScheme="green"
                   size="sm"
                 >
@@ -391,7 +343,7 @@ export default function GroupsPage() {
       )}
 
       {/* Groups Accordion */}
-      {loading ? (
+      {groupsState.loading ? (
         <Card>
           <CardContent>
             <VStack align="center" gap={4} py={8}>
@@ -400,7 +352,7 @@ export default function GroupsPage() {
             </VStack>
           </CardContent>
         </Card>
-      ) : groups.length === 0 && mounted ? (
+      ) : groupsState.value && groupsState.value.length === 0 ? (
         <Card>
           <CardContent>
             <VStack align="center" gap={4} py={8}>
@@ -488,9 +440,9 @@ export default function GroupsPage() {
             </VStack>
           </CardContent>
         </Card>
-      ) : (
+      ) : groupsState.value ? (
         <VStack align="stretch" gap={4}>
-          {groups.map((group) => (
+          {groupsState.value.map((group: Group) => (
             <Card key={group.id}>
               <Collapsible
                 open={openGroups[group.id] || false}
@@ -547,7 +499,7 @@ export default function GroupsPage() {
                             API Keys ({group.apiKeys.length})
                           </Text>
                           <VStack align="stretch" gap={2}>
-                            {group.apiKeys.map((apiKey) => (
+                            {group.apiKeys.map((apiKey: Group['apiKeys'][0]) => (
                               <Box
                                 key={apiKey.id}
                                 p={2}
@@ -559,7 +511,7 @@ export default function GroupsPage() {
                                   {apiKey.label}
                                 </Text>
                                 <Text fontSize="xs" color="fg.muted">
-                                  Created {formatDate(apiKey.createdAt)}
+                                  Created {format(new Date(apiKey.createdAt), 'MMM d, yyyy')}
                                 </Text>
                               </Box>
                             ))}
@@ -574,7 +526,7 @@ export default function GroupsPage() {
                             Pending Requests ({group.pendingRequests.length})
                           </Text>
                           <VStack align="stretch" gap={2}>
-                            {group.pendingRequests.map((request) => (
+                            {group.pendingRequests.map((request: Group['pendingRequests'][0]) => (
                               <Box
                                 key={request.id}
                                 p={2}
@@ -589,7 +541,7 @@ export default function GroupsPage() {
                                   {request.userEmail}
                                 </Text>
                                 <Text fontSize="xs" color="fg.muted">
-                                  Requested {formatDate(request.createdAt)}
+                                  Requested {format(new Date(request.createdAt), 'MMM d, yyyy')}
                                 </Text>
                               </Box>
                             ))}
@@ -609,7 +561,7 @@ export default function GroupsPage() {
             </Card>
           ))}
         </VStack>
-      )}
+      ) : null}
     </Box>
   );
 }
