@@ -19,9 +19,9 @@ import {
 } from '@chakra-ui/react';
 import { useMemo, useState } from 'react';
 import { useAsyncRetry } from 'react-use';
-import { getGroupsWithDetails } from '@/app/actions/groups';
-import { createGroup } from '@/app/actions/keys';
-import { Plus } from 'lucide-react';
+import { getGroupsWithDetails, approvePendingRequest, denyPendingRequest } from '@/app/actions/groups';
+import { createGroup, createApiKey } from '@/app/actions/keys';
+import { Plus, Key, Check, X } from 'lucide-react';
 
 interface Group {
   id: string;
@@ -48,6 +48,16 @@ export default function GroupsPage() {
   const [newGroupDescription, setNewGroupDescription] = useState('');
   const [creatingGroup, setCreatingGroup] = useState(false);
   const [createGroupError, setCreateGroupError] = useState<string | null>(null);
+
+  // API Key creation state
+  const [creatingApiKeyGroupId, setCreatingApiKeyGroupId] = useState<string | null>(null);
+  const [apiKeyLabel, setApiKeyLabel] = useState('');
+  const [creatingApiKey, setCreatingApiKey] = useState(false);
+  const [apiKeyError, setApiKeyError] = useState<string | null>(null);
+  const [createdApiKey, setCreatedApiKey] = useState<string | null>(null);
+
+  // Request action state
+  const [processingRequestId, setProcessingRequestId] = useState<string | null>(null);
 
   const state = useAsyncRetry(async (): Promise<Group[]> => {
     const result = await getGroupsWithDetails();
@@ -94,6 +104,76 @@ export default function GroupsPage() {
     }
   };
 
+  const handleCreateApiKey = async (groupId: string) => {
+    if (!apiKeyLabel.trim()) return;
+
+    setCreatingApiKey(true);
+    setApiKeyError(null);
+    setCreatedApiKey(null);
+
+    try {
+      const result = await createApiKey(apiKeyLabel.trim(), [groupId]);
+
+      if (result.error) {
+        setApiKeyError(result.error);
+      } else {
+        setApiKeyLabel('');
+        setCreatingApiKeyGroupId(null);
+        if (result.apiKey) {
+          setCreatedApiKey(result.apiKey);
+          // Clear after 5 seconds
+          setTimeout(() => setCreatedApiKey(null), 5000);
+        }
+        // Reload groups
+        state.retry();
+      }
+    } catch (err) {
+      setApiKeyError('Failed to create API key');
+    } finally {
+      setCreatingApiKey(false);
+    }
+  };
+
+  const handleApproveRequest = async (requestId: string, groupId: string) => {
+    setProcessingRequestId(requestId);
+
+    try {
+      const result = await approvePendingRequest(requestId, groupId);
+
+      if (result.error) {
+        // Could show error toast here
+        console.error('Failed to approve request:', result.error);
+      } else {
+        // Reload groups
+        state.retry();
+      }
+    } catch (err) {
+      console.error('Failed to approve request:', err);
+    } finally {
+      setProcessingRequestId(null);
+    }
+  };
+
+  const handleDenyRequest = async (requestId: string, groupId: string) => {
+    setProcessingRequestId(requestId);
+
+    try {
+      const result = await denyPendingRequest(requestId, groupId);
+
+      if (result.error) {
+        // Could show error toast here
+        console.error('Failed to deny request:', result.error);
+      } else {
+        // Reload groups
+        state.retry();
+      }
+    } catch (err) {
+      console.error('Failed to deny request:', err);
+    } finally {
+      setProcessingRequestId(null);
+    }
+  };
+
   if (state.loading) {
     return (
       <Box p={6}>
@@ -107,7 +187,7 @@ export default function GroupsPage() {
       {showGroupsContent && (
         <>
           <HStack justify="space-between" align="center">
-            <Select.Root collection={collection} size="sm" width="320px">
+            <Select.Root multiple collection={collection} size="sm" width="320px">
               <Select.HiddenSelect />
               <Select.Label>Select group</Select.Label>
               <Select.Control>
@@ -158,11 +238,83 @@ export default function GroupsPage() {
                 <Accordion.ItemContent>
                   <Accordion.ItemBody>
                     <VStack align="stretch" gap={4} py={2}>
-                      {group.apiKeys.length > 0 && (
-                        <Box>
-                          <Text fontSize="sm" fontWeight="medium" mb={2}>
+                      <Box>
+                        <HStack justify="space-between" align="center" mb={2}>
+                          <Text fontSize="sm" fontWeight="medium">
                             API Keys ({group.apiKeys.length})
                           </Text>
+                          <Button
+                            size="xs"
+                            colorScheme="blue"
+                            onClick={() => {
+                              setCreatingApiKeyGroupId(group.id);
+                              setApiKeyLabel('');
+                              setApiKeyError(null);
+                              setCreatedApiKey(null);
+                            }}
+                          >
+                            <Key className="mr-1 h-3 w-3" />
+                            Create API Key
+                          </Button>
+                        </HStack>
+
+                        {creatingApiKeyGroupId === group.id && (
+                          <Box p={3} borderRadius="md" borderWidth="1px" bg="bg.muted" mb={2}>
+                            <VStack align="stretch" gap={2}>
+                              {apiKeyError && (
+                                <Text fontSize="xs" color="red.600">
+                                  {apiKeyError}
+                                </Text>
+                              )}
+                              {createdApiKey && (
+                                <Box p={2} borderRadius="md" bg="green.50" borderWidth="1px" borderColor="green.200">
+                                  <Text fontSize="xs" fontWeight="medium" color="green.700" mb={1}>
+                                    API Key Created:
+                                  </Text>
+                                  <Text fontSize="xs" fontFamily="mono" color="green.800" wordBreak="break-all">
+                                    {createdApiKey}
+                                  </Text>
+                                  <Text fontSize="xs" color="green.600" mt={1}>
+                                    Save this key - it won't be shown again!
+                                  </Text>
+                                </Box>
+                              )}
+                              <Input
+                                placeholder="Enter API key label"
+                                value={apiKeyLabel}
+                                onChange={(e) => setApiKeyLabel(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && !creatingApiKey && handleCreateApiKey(group.id)}
+                                disabled={creatingApiKey}
+                                size="sm"
+                              />
+                              <HStack gap={2} justify="end">
+                                <Button
+                                  size="xs"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setCreatingApiKeyGroupId(null);
+                                    setApiKeyLabel('');
+                                    setApiKeyError(null);
+                                    setCreatedApiKey(null);
+                                  }}
+                                  disabled={creatingApiKey}
+                                >
+                                  Cancel
+                                </Button>
+                                <Button
+                                  size="xs"
+                                  colorScheme="blue"
+                                  onClick={() => handleCreateApiKey(group.id)}
+                                  disabled={creatingApiKey || !apiKeyLabel.trim()}
+                                >
+                                  {creatingApiKey ? 'Creating...' : 'Create'}
+                                </Button>
+                              </HStack>
+                            </VStack>
+                          </Box>
+                        )}
+
+                        {group.apiKeys.length > 0 && (
                           <VStack align="stretch" gap={2}>
                             {group.apiKeys.map((apiKey: Group['apiKeys'][0]) => (
                               <Box
@@ -181,8 +333,8 @@ export default function GroupsPage() {
                               </Box>
                             ))}
                           </VStack>
-                        </Box>
-                      )}
+                        )}
+                      </Box>
 
                       {group.pendingRequests.length > 0 && (
                         <Box>
@@ -198,15 +350,45 @@ export default function GroupsPage() {
                                 borderWidth="1px"
                                 bg="bg.muted"
                               >
-                                <Text fontSize="sm" fontWeight="medium">
-                                  {request.userName || request.userEmail}
-                                </Text>
-                                <Text fontSize="xs" color="fg.muted">
-                                  {request.userEmail}
-                                </Text>
-                                <Text fontSize="xs" color="fg.muted">
-                                  Requested {new Date(request.createdAt).toLocaleDateString()}
-                                </Text>
+                                <HStack justify="space-between" align="start">
+                                  <Box flex="1">
+                                    <Text fontSize="sm" fontWeight="medium">
+                                      {request.userName || request.userEmail}
+                                    </Text>
+                                    <Text fontSize="xs" color="fg.muted">
+                                      {request.userEmail}
+                                    </Text>
+                                    <Text fontSize="xs" color="fg.muted">
+                                      Requested {new Date(request.createdAt).toLocaleDateString()}
+                                    </Text>
+                                  </Box>
+                                  <HStack gap={1}>
+                                    <Button
+                                      size="xs"
+                                      colorScheme="green"
+                                      onClick={() => handleApproveRequest(request.id, group.id)}
+                                      disabled={processingRequestId === request.id}
+                                    >
+                                      {processingRequestId === request.id ? (
+                                        <Spinner size="xs" />
+                                      ) : (
+                                        <Check className="h-3 w-3" />
+                                      )}
+                                    </Button>
+                                    <Button
+                                      size="xs"
+                                      colorScheme="red"
+                                      onClick={() => handleDenyRequest(request.id, group.id)}
+                                      disabled={processingRequestId === request.id}
+                                    >
+                                      {processingRequestId === request.id ? (
+                                        <Spinner size="xs" />
+                                      ) : (
+                                        <X className="h-3 w-3" />
+                                      )}
+                                    </Button>
+                                  </HStack>
+                                </HStack>
                               </Box>
                             ))}
                           </VStack>

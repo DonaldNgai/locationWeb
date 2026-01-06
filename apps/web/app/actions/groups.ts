@@ -350,6 +350,105 @@ export async function approvePendingRequest(
   }
 }
 
+type DenyPendingRequestResult = {
+  success?: boolean;
+  error?: string;
+  status?: number;
+};
+
+/**
+ * Server action to deny a pending membership request
+ */
+export async function denyPendingRequest(
+  requestId: string,
+  groupId: string
+): Promise<DenyPendingRequestResult> {
+  try {
+    const currentUser = await getCurrentUserFullDetails(auth0);
+    if (!currentUser?.email) {
+      return {
+        error: 'Unauthorized',
+        status: 401,
+      };
+    }
+
+    if (!requestId || typeof requestId !== 'string') {
+      return {
+        error: 'Request ID is required',
+        status: 400,
+      };
+    }
+
+    if (!groupId || typeof groupId !== 'string') {
+      return {
+        error: 'Group ID is required',
+        status: 400,
+      };
+    }
+
+    // Verify current user has access to this group
+    const currentDbUser = await prisma.user.findUnique({
+      where: { email: currentUser.email },
+      include: {
+        groupMemberships: {
+          where: {
+            status: 'active',
+            groupId,
+          },
+        },
+      },
+    });
+
+    if (!currentDbUser || currentDbUser.groupMemberships.length === 0) {
+      return {
+        error: 'You do not have access to this group',
+        status: 403,
+      };
+    }
+
+    // Verify the request exists and belongs to this group
+    const membership = await prisma.groupMember.findUnique({
+      where: { id: requestId },
+    });
+
+    if (!membership) {
+      return {
+        error: 'Request not found',
+        status: 404,
+      };
+    }
+
+    if (membership.groupId !== groupId) {
+      return {
+        error: 'Request does not belong to this group',
+        status: 403,
+      };
+    }
+
+    if (membership.status !== 'pending') {
+      return {
+        error: 'Request is not pending',
+        status: 400,
+      };
+    }
+
+    // Delete the membership request (deny by removing it)
+    await prisma.groupMember.delete({
+      where: { id: requestId },
+    });
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error('Error denying pending request:', error);
+    return {
+      error: 'Internal server error',
+      status: 500,
+    };
+  }
+}
+
 /**
  * Server action to get pending membership requests for a specific group
  */
