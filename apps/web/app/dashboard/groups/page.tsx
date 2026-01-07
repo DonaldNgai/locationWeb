@@ -16,9 +16,9 @@ import {
 } from '@chakra-ui/react';
 import { useState } from 'react';
 import { useAsyncRetry } from 'react-use';
-import { getGroupsWithDetails, approvePendingRequest, denyPendingRequest } from '@/app/actions/groups';
+import { getGroupsWithDetails, approvePendingRequest, denyPendingRequest, removeUserFromGroup } from '@/app/actions/groups';
 import { createGroup, createApiKey } from '@/app/actions/keys';
-import { Plus, Key, Check, X, UserPlus } from 'lucide-react';
+import { Plus, Key, Check, X, UserPlus, Trash2 } from 'lucide-react';
 import { InviteDialog } from './invite-dialog';
 
 interface Group {
@@ -26,6 +26,12 @@ interface Group {
   name: string;
   description: string | null;
   pendingRequests: Array<{
+    id: string;
+    userEmail: string;
+    userName: string | null;
+    createdAt: Date;
+  }>;
+  members: Array<{
     id: string;
     userEmail: string;
     userName: string | null;
@@ -57,18 +63,22 @@ export default function GroupsPage() {
   // Request action state
   const [processingRequestId, setProcessingRequestId] = useState<string | null>(null);
 
+  // Remove member state
+  const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
+
   // Invite dialog state
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
 
-  const state = useAsyncRetry(async (): Promise<Group[]> => {
+  const state = useAsyncRetry(async (): Promise<{ groups: Group[]; currentUserEmail?: string }> => {
     const result = await getGroupsWithDetails();
     if (result.error) {
       throw new Error(result.error);
     }
-    return result.groups || [];
+    return { groups: result.groups || [], currentUserEmail: result.currentUserEmail };
   }, []);
 
-  const hasGroups = state.value && state.value.length > 0;
+  const hasGroups = state.value && state.value.groups.length > 0;
+  const currentUserEmail = state.value?.currentUserEmail;
   const showGroupsContent = hasGroups && !showCreateForm;
   const showCreateCard = !hasGroups || showCreateForm;
 
@@ -88,7 +98,7 @@ export default function GroupsPage() {
         setNewGroupDescription('');
         setShowCreateForm(false);
         // Reload groups
-        state.retry();
+        await state.retry();
       }
     } catch (err) {
       setCreateGroupError('Failed to create group');
@@ -118,7 +128,7 @@ export default function GroupsPage() {
           setTimeout(() => setCreatedApiKey(null), 5000);
         }
         // Reload groups
-        state.retry();
+        await state.retry();
       }
     } catch (err) {
       setApiKeyError('Failed to create API key');
@@ -138,7 +148,7 @@ export default function GroupsPage() {
         console.error('Failed to approve request:', result.error);
       } else {
         // Reload groups
-        state.retry();
+        await state.retry();
       }
     } catch (err) {
       console.error('Failed to approve request:', err);
@@ -158,12 +168,32 @@ export default function GroupsPage() {
         console.error('Failed to deny request:', result.error);
       } else {
         // Reload groups
-        state.retry();
+        await state.retry();
       }
     } catch (err) {
       console.error('Failed to deny request:', err);
     } finally {
       setProcessingRequestId(null);
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string, groupId: string) => {
+    setRemovingMemberId(memberId);
+
+    try {
+      const result = await removeUserFromGroup(memberId, groupId);
+
+      if (result.error) {
+        // Could show error toast here
+        console.error('Failed to remove member:', result.error);
+      } else {
+        // Reload groups
+        await state.retry();
+      }
+    } catch (err) {
+      console.error('Failed to remove member:', err);
+    } finally {
+      setRemovingMemberId(null);
     }
   };
 
@@ -201,12 +231,12 @@ export default function GroupsPage() {
           <InviteDialog
             isOpen={isInviteDialogOpen}
             onClose={() => setIsInviteDialogOpen(false)}
-            groups={state.value || []}
+            groups={state.value?.groups || []}
             onSuccess={() => state.retry()}
           />
 
           <Accordion.Root multiple>
-            {state.value!.map((group) => (
+            {state.value!.groups.map((group) => (
               <Accordion.Item key={group.id} value={group.id}>
                 <Accordion.ItemTrigger>
                   <Box flex="1" textAlign="left">
@@ -320,6 +350,60 @@ export default function GroupsPage() {
                         )}
                       </Box>
 
+                      <Box>
+                        <Text fontSize="sm" fontWeight="medium" mb={2}>
+                          Members ({group.members.filter(m => m.userEmail !== currentUserEmail).length})
+                        </Text>
+                        {group.members.filter(m => m.userEmail !== currentUserEmail).length > 0 ? (
+                          <VStack align="stretch" gap={2}>
+                            {group.members
+                              .filter(m => m.userEmail !== currentUserEmail)
+                              .map((member) => (
+                              <Box
+                                key={member.id}
+                                p={2}
+                                borderRadius="md"
+                                borderWidth="1px"
+                                bg="bg.muted"
+                              >
+                                <HStack justify="space-between" align="start">
+                                  <Box flex="1">
+                                    <Text fontSize="sm" fontWeight="medium">
+                                      {member.userName || member.userEmail}
+                                    </Text>
+                                    {member.userName && (
+                                      <Text fontSize="xs" color="fg.muted">
+                                        {member.userEmail}
+                                      </Text>
+                                    )}
+                                    <Text fontSize="xs" color="fg.muted">
+                                      Joined {new Date(member.createdAt).toLocaleDateString()}
+                                    </Text>
+                                  </Box>
+                                  <Button
+                                    size="xs"
+                                    colorScheme="red"
+                                    variant="ghost"
+                                    onClick={() => handleRemoveMember(member.id, group.id)}
+                                    disabled={removingMemberId === member.id}
+                                  >
+                                    {removingMemberId === member.id ? (
+                                      <Spinner size="xs" />
+                                    ) : (
+                                      <Trash2 className="h-3 w-3" />
+                                    )}
+                                  </Button>
+                                </HStack>
+                              </Box>
+                            ))}
+                          </VStack>
+                        ) : (
+                          <Text fontSize="sm" color="fg.muted" textAlign="center" py={2}>
+                            No other members in this group.
+                          </Text>
+                        )}
+                      </Box>
+
                       {group.pendingRequests.length > 0 && (
                         <Box>
                           <Text fontSize="sm" fontWeight="medium" mb={2}>
@@ -379,7 +463,7 @@ export default function GroupsPage() {
                         </Box>
                       )}
 
-                      {group.apiKeys.length === 0 && group.pendingRequests.length === 0 && (
+                      {group.apiKeys.length === 0 && group.pendingRequests.length === 0 && group.members.length === 0 && (
                         <Text fontSize="sm" color="fg.muted" textAlign="center" py={4}>
                           No additional information for this group.
                         </Text>

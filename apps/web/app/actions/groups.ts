@@ -350,6 +350,116 @@ export async function approvePendingRequest(
   }
 }
 
+type RemoveUserFromGroupResult = {
+  success?: boolean;
+  error?: string;
+  status?: number;
+};
+
+/**
+ * Server action to remove a user from a group
+ */
+export async function removeUserFromGroup(
+  memberId: string,
+  groupId: string
+): Promise<RemoveUserFromGroupResult> {
+  try {
+    const currentUser = await getCurrentUserFullDetails(auth0);
+    if (!currentUser?.email) {
+      return {
+        error: 'Unauthorized',
+        status: 401,
+      };
+    }
+
+    if (!memberId || typeof memberId !== 'string') {
+      return {
+        error: 'Member ID is required',
+        status: 400,
+      };
+    }
+
+    if (!groupId || typeof groupId !== 'string') {
+      return {
+        error: 'Group ID is required',
+        status: 400,
+      };
+    }
+
+    // Verify current user has access to this group
+    const currentDbUser = await prisma.user.findUnique({
+      where: { email: currentUser.email },
+      include: {
+        groupMemberships: {
+          where: {
+            status: 'active',
+            groupId,
+          },
+        },
+      },
+    });
+
+    if (!currentDbUser || currentDbUser.groupMemberships.length === 0) {
+      return {
+        error: 'You do not have access to this group',
+        status: 403,
+      };
+    }
+
+    // Verify the membership exists and belongs to this group
+    const membership = await prisma.groupMember.findUnique({
+      where: { id: memberId },
+      include: {
+        user: true,
+      },
+    });
+
+    if (!membership) {
+      return {
+        error: 'Membership not found',
+        status: 404,
+      };
+    }
+
+    if (membership.groupId !== groupId) {
+      return {
+        error: 'Membership does not belong to this group',
+        status: 403,
+      };
+    }
+
+    if (membership.status !== 'active') {
+      return {
+        error: 'Membership is not active',
+        status: 400,
+      };
+    }
+
+    // Prevent removing yourself
+    if (membership.user.email === currentUser.email) {
+      return {
+        error: 'You cannot remove yourself from the group',
+        status: 400,
+      };
+    }
+
+    // Delete the membership
+    await prisma.groupMember.delete({
+      where: { id: memberId },
+    });
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error('Error removing user from group:', error);
+    return {
+      error: 'Internal server error',
+      status: 500,
+    };
+  }
+}
+
 type DenyPendingRequestResult = {
   success?: boolean;
   error?: string;
@@ -820,16 +930,25 @@ export async function batchInviteUsersToGroups(
   }
 }
 
+type GroupMember = {
+  id: string;
+  userEmail: string;
+  userName: string | null;
+  createdAt: Date;
+};
+
 type GroupWithDetails = {
   id: string;
   name: string;
   description: string | null;
   pendingRequests: PendingRequest[];
+  members: GroupMember[];
   apiKeys: ApiKey[];
 };
 
 type GetGroupsWithDetailsResult = {
   groups?: GroupWithDetails[];
+  currentUserEmail?: string;
   error?: string;
   status?: number;
 };
@@ -869,7 +988,6 @@ export async function getGroupsWithDetails(): Promise<GetGroupsWithDetailsResult
             group: {
               include: {
                 members: {
-                  where: { status: 'pending' },
                   include: { user: true },
                   orderBy: { createdAt: 'desc' },
                 },
@@ -915,13 +1033,25 @@ export async function getGroupsWithDetails(): Promise<GetGroupsWithDetailsResult
     const groups: GroupWithDetails[] = dbUser.groupMemberships.map((membership) => {
       const group = membership.group;
       
-      // Map pending requests
-      const pendingRequests: PendingRequest[] = group.members.map((member) => ({
-        id: member.id,
-        userEmail: member.user.email,
-        userName: member.user.name,
-        createdAt: member.createdAt,
-      }));
+      // Map pending requests (join requests)
+      const pendingRequests: PendingRequest[] = group.members
+        .filter((member) => member.status === 'pending')
+        .map((member) => ({
+          id: member.id,
+          userEmail: member.user.email,
+          userName: member.user.name,
+          createdAt: member.createdAt,
+        }));
+      
+      // Map active members
+      const members: GroupMember[] = group.members
+        .filter((member) => member.status === 'active')
+        .map((member) => ({
+          id: member.id,
+          userEmail: member.user.email,
+          userName: member.user.name,
+          createdAt: member.createdAt,
+        }));
 
       // Get API keys for this group
       const groupApiKeysFromBackend = allApiKeys.filter((key: any) => key.groupId === group.id);
@@ -949,11 +1079,12 @@ export async function getGroupsWithDetails(): Promise<GetGroupsWithDetailsResult
         name: group.name,
         description: group.description,
         pendingRequests,
+        members,
         apiKeys,
       };
     });
 
-    return { groups };
+    return { groups, currentUserEmail: currentUser.email || undefined };
   } catch (error) {
     console.error('Error fetching groups with details:', error);
     return {
