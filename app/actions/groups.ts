@@ -2,11 +2,14 @@
 
 import { getCurrentUserFullDetails } from '@DonaldNgai/next-utils/auth/users';
 import { getUserByEmail } from '@DonaldNgai/next-utils/auth/users';
-import { getAuthenticatedAccessToken } from '@DonaldNgai/next-utils/auth';
 import { auth0 } from '@/lib/auth/auth0';
 import { prisma } from '@/lib/db/prisma';
-import { getApiInternalApiKeys, postApiInternalGroupsGroupIdInvitations } from '@/lib/generated/api';
-import type { AxiosError } from 'axios';
+import {
+  getApiInternalApiKeys,
+  postApiInternalGroupsGroupIdInvitations,
+  type GetApiInternalApiKeys200,
+} from '@/lib/generated/api';
+import { executeApiCall, requireAuth, type ApiError } from '@/lib/api/client';
 
 type InviteUserToGroupResult = {
   success?: boolean;
@@ -66,13 +69,8 @@ type VerifyUserResult = {
  */
 export async function verifyUserExists(email: string): Promise<VerifyUserResult> {
   try {
-    const user = await getCurrentUserFullDetails(auth0);
-    if (!user?.email) {
-      return {
-        error: 'Unauthorized',
-        status: 401,
-      };
-    }
+    const authResult = await requireAuth();
+    if ('error' in authResult) return authResult;
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email || typeof email !== 'string' || !emailRegex.test(email.trim())) {
@@ -132,13 +130,9 @@ export async function inviteUserToGroup(
   userEmail: string
 ): Promise<InviteUserToGroupResult> {
   try {
-    const currentUser = await getCurrentUserFullDetails(auth0);
-    if (!currentUser?.email) {
-      return {
-        error: 'Unauthorized',
-        status: 401,
-      };
-    }
+    const authResult = await requireAuth();
+    if ('error' in authResult) return authResult;
+    const currentUser = authResult.user;
 
     if (!groupId || typeof groupId !== 'string') {
       return {
@@ -262,13 +256,9 @@ export async function approvePendingRequest(
   groupId: string
 ): Promise<ApprovePendingRequestResult> {
   try {
-    const currentUser = await getCurrentUserFullDetails(auth0);
-    if (!currentUser?.email) {
-      return {
-        error: 'Unauthorized',
-        status: 401,
-      };
-    }
+    const authResult = await requireAuth();
+    if ('error' in authResult) return authResult;
+    const currentUser = authResult.user;
 
     if (!requestId || typeof requestId !== 'string') {
       return {
@@ -674,34 +664,17 @@ export async function getApiKeysForGroup(groupId: string): Promise<GetGroupApiKe
       };
     }
 
-    // Get access token for backend API
-    const tokenResult = await getAuthenticatedAccessToken(auth0);
-    if (!tokenResult.isValid || !tokenResult.token) {
-      return {
-        error: 'Failed to get access token',
-        status: 401,
-      };
-    }
-
     // Call backend API to get all API keys
-    let allApiKeys: any[] = [];
-    try {
-      const response = await getApiInternalApiKeys(undefined, {
-        headers: {
-          Authorization: `Bearer ${tokenResult.token.token}`,
-        },
-      });
-      const data = response.data;
-      allApiKeys = data.items || [];
-    } catch (error) {
-      const axiosError = error as AxiosError;
-      const errorData = axiosError.response?.data as { error?: string } | undefined;
-      console.error('Error fetching API keys for group:', errorData);
-      return {
-        error: errorData?.error || 'Internal server error',
-        status: axiosError.response?.status || 500,
-      };
+    const result = await executeApiCall<GetApiInternalApiKeys200>(
+      (config) => getApiInternalApiKeys(undefined, config)
+    );
+    
+    if (!result.success) {
+      console.error('Error fetching API keys for group:', result.error);
+      return result.error;
     }
+    
+    const allApiKeys = result.data.items || [];
 
     // Filter API keys for this specific group
     // The backend API should return groupId in the response, but if not, we'll need to check the database
@@ -767,13 +740,9 @@ export async function batchInviteUsersToGroups(
   groupIds: string[]
 ): Promise<BatchInviteResult> {
   try {
-    const currentUser = await getCurrentUserFullDetails(auth0);
-    if (!currentUser?.email) {
-      return {
-        error: 'Unauthorized',
-        status: 401,
-      };
-    }
+    const authResult = await requireAuth();
+    if ('error' in authResult) return authResult;
+    const currentUser = authResult.user;
 
     if (!userEmails || !Array.isArray(userEmails) || userEmails.length === 0) {
       return {
@@ -789,18 +758,9 @@ export async function batchInviteUsersToGroups(
       };
     }
 
-    // Get access token for backend API
-    const tokenResult = await getAuthenticatedAccessToken(auth0);
-    if (!tokenResult.isValid || !tokenResult.token) {
-      return {
-        error: 'Failed to get access token',
-        status: 401,
-      };
-    }
-
     // Verify current user has access to all groups
     const currentDbUser = await prisma.user.findUnique({
-      where: { email: currentUser.email },
+      where: { email: authResult.user.email },
       include: {
         groupMemberships: {
           where: {
@@ -887,25 +847,24 @@ export async function batchInviteUsersToGroups(
           }
 
           // Create invitation via API
-          await postApiInternalGroupsGroupIdInvitations(
-            groupId,
-            { userId },
-            {
-              headers: {
-                Authorization: `Bearer ${tokenResult.token.token}`,
-              },
-            }
+          const result = await executeApiCall((config) =>
+            postApiInternalGroupsGroupIdInvitations(groupId, { userId }, config)
           );
-          userInvited = true;
+          
+          if (result.success) {
+            userInvited = true;
+          } else {
+            console.error(`Error inviting user ${trimmedEmail} to group ${groupId}:`, result.error);
+            errors.push({
+              email: trimmedEmail,
+              error: result.error.error,
+            });
+          }
         } catch (error) {
-          const axiosError = error as AxiosError;
-          const errorMessage = axiosError.response?.data
-            ? (axiosError.response.data as any)?.error || 'Failed to create invitation'
-            : 'Failed to create invitation';
           console.error(`Error inviting user ${trimmedEmail} to group ${groupId}:`, error);
           errors.push({
             email: trimmedEmail,
-            error: errorMessage,
+            error: 'Failed to create invitation',
           });
         }
       }
@@ -959,26 +918,13 @@ type GetGroupsWithDetailsResult = {
  */
 export async function getGroupsWithDetails(): Promise<GetGroupsWithDetailsResult> {
   try {
-    const currentUser = await getCurrentUserFullDetails(auth0);
-    if (!currentUser?.email) {
-      return {
-        error: 'Unauthorized',
-        status: 401,
-      };
-    }
-
-    // Get access token for backend API
-    const tokenResult = await getAuthenticatedAccessToken(auth0);
-    if (!tokenResult.isValid || !tokenResult.token) {
-      return {
-        error: 'Failed to get access token',
-        status: 401,
-      };
-    }
+    const authResult = await requireAuth();
+    if ('error' in authResult) return authResult;
+    const currentUser = authResult.user;
 
     // Find user with active group memberships
     const dbUser = await prisma.user.findUnique({
-      where: { email: currentUser.email },
+      where: { email: authResult.user.email },
       include: {
         groupMemberships: {
           where: {
@@ -1005,18 +951,15 @@ export async function getGroupsWithDetails(): Promise<GetGroupsWithDetailsResult
     const groupIds = dbUser.groupMemberships.map((m) => m.group.id);
 
     // Fetch API keys from backend
+    const apiKeysResult = await executeApiCall<GetApiInternalApiKeys200>(
+      (config) => getApiInternalApiKeys(undefined, config)
+    );
+    
     let allApiKeys: any[] = [];
-    try {
-      const response = await getApiInternalApiKeys(undefined, {
-        headers: {
-          Authorization: `Bearer ${tokenResult.token.token}`,
-        },
-      });
-      const data = response.data;
-      allApiKeys = data.items || [];
-    } catch (error) {
-      const axiosError = error as AxiosError;
-      console.error('Error fetching API keys from backend:', axiosError.response?.data || error);
+    if (apiKeysResult.success) {
+      allApiKeys = apiKeysResult.data.items || [];
+    } else {
+      console.error('Error fetching API keys from backend:', apiKeysResult.error);
       // Continue with empty array, will use database fallback
     }
 
