@@ -117,10 +117,10 @@ model location_shares {
   started_at DateTime  @default(now())
   ended_at   DateTime?
   is_active  Boolean   @default(true)
-  frequency  Int?      @map("frequency") // Frequency in seconds (e.g., 60 for 1 minute, 300 for 5 minutes)
-  duration   Int?      @map("duration")   // Duration in seconds (e.g., 3600 for 1 hour, 86400 for 1 day)
   created_at DateTime  @default(now())
   updated_at DateTime
+  duration   Int?      @map("duration")
+  frequency  Int?      @map("frequency")
   groups     Group     @relation(fields: [group_id], references: [id], onDelete: Cascade)
   users      User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
 

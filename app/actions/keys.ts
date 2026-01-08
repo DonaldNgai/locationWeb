@@ -525,10 +525,12 @@ export async function createApiKey(
           }
         );
         const apiKeyData = response.data;
+        // Use the label we sent in the request (the API doesn't return it in the response)
+        const keyLabel = groupsToUse.length > 1 ? `${labelToUse} (${groupsToUse.indexOf(groupId) + 1})` : labelToUse;
         createdKeys.push({
           apiKey: apiKeyData.apiKey,
-          id: apiKeyData.id || '',
-          label: apiKeyData.label,
+          id: '', // The API doesn't return the id in the create response, we'd need to fetch it separately if needed
+          label: keyLabel,
           groupId,
         });
       } catch (error) {
