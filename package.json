@@ -6,7 +6,7 @@
     "dev": "pnpm db:generate && next dev --turbopack --port 3001",
     "build": "next build",
     "start": "next start",
-    "install:vercel": "bash ./scripts/setup-submodule.sh && pnpm install",
+    "install:vercel": "node ./scripts/setup-submodule.js && pnpm install",
     "lint": "echo 'No lint script configured'",
     "test": "echo 'No test script configured'",
     "format": "prettier --write .",
