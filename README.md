@@ -2,7 +2,7 @@
 
 This is a starter template for building a SaaS application using **Next.js** with support for authentication, Stripe integration for payments, and a dashboard for logged-in users.
 
-**⚠️ Authentication Update**: This application has been migrated to use **Auth0** for authentication. See `apps/web/AUTH0_SUMMARY.md` and `apps/web/AUTH0_MIGRATION.md` for details.
+**⚠️ Authentication Update**: This application has been migrated to use **Auth0** for authentication.
 
 **Demo: [https://next-saas-start.vercel.app/](https://next-saas-start.vercel.app/)**
 
@@ -110,18 +110,15 @@ While this template is intentionally minimal and to be used as a learning resour
 
 To Setup
 Use Next 15
-0. Setup Submodules
-    Pull latest submodules
+0. Setup Git Submodules
+    The project uses git submodules for packages/next-utils and packages/ui
+    Initialize submodules:
         git submodule update --init --recursive
-    add pnpm workspace packages
-        "@repo/next-utils": "workspace:*",
-        "@repo/ui": "workspace:*",
-    add submodules to tsconfig.json - 
+    Paths are configured in tsconfig.json:
       "@DonaldNgai/next-utils/*": ["./packages/next-utils/src/*"],
       "@DonaldNgai/chakra-ui/*": ["./packages/ui/src/*"]
-    add packages to be transpiled to next.config.ts
-          transpilePackages: ['@DonaldNgai/next-utils', '@DonaldNgai/chakra-ui'],
-    Make sure global.css and tailwind.config.ts references css from built packages
+    Install dependencies:
+        pnpm install
 
 1. Setup Auth0
     Add lib/auth

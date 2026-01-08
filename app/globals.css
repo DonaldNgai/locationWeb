@@ -4,12 +4,12 @@
 @import 'tailwindcss';
 
 /* Scan the @DonaldNgai/chakra-ui package for Tailwind classes */
-/* Scan source files directly from workspace (more reliable than node_modules in monorepo) */
-@source "../../../packages/ui/src";
-@source "../../../packages/ui/dist";
+/* Scan source files directly from workspace (more reliable than node_modules in submodule setup) */
+@source "../packages/ui/src";
+@source "../packages/ui/dist";
 /* Also scan node_modules as fallback */
-@source "../../../node_modules/@DonaldNgai/chakra-ui/src";
-@source "../../../node_modules/@DonaldNgai/chakra-ui/dist";
+@source "../node_modules/@DonaldNgai/chakra-ui/src";
+@source "../node_modules/@DonaldNgai/chakra-ui/dist";
 
 /*
   ---break---

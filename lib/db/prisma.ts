@@ -2,11 +2,11 @@ import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
 import { resolve } from 'path';
 
-// Load environment variables from .env files in workspace root
-// From apps/web/lib/db/prisma.ts, go up 4 levels to workspace root
-const workspaceRoot = resolve(__dirname, '../../../../');
+// Load environment variables from .env files in project root
+// From lib/db/prisma.ts, go up 2 levels to project root
+const projectRoot = resolve(__dirname, '../../');
 dotenv.config(); // Loads .env
-dotenv.config({ path: resolve(workspaceRoot, '.env') });
+dotenv.config({ path: resolve(projectRoot, '.env') });
 
 if (!process.env.POSTGRES_URL) {
   throw new Error('POSTGRES_URL environment variable is not set');
