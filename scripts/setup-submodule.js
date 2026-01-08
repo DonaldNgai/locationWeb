@@ -61,9 +61,6 @@ if (process.env.VERCEL || process.env.CI) {
   console.log('📥 Installing dependencies for cloned packages...');
   runCommand('pnpm install --ignore-scripts');
   
-  // Run prisma generate manually since we skipped scripts
-  console.log('🔧 Running prisma generate...');
-  runCommand('npx prisma generate');
 } else {
   console.log('⏭️  Local development - using existing packages');
 }
