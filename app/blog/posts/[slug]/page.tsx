@@ -5,7 +5,7 @@ import type { Metadata, ResolvingMetadata } from 'next';
 type PortableTextBlock = any;
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Container, Box, Heading, Text, SimpleGrid, Skeleton } from '@chakra-ui/react';
+import { Box, Heading, Text, SimpleGrid, Skeleton } from '@chakra-ui/react';
 import { Separator } from '@DonaldNgai/chakra-ui';
 import { CardRoot as Card, CardBody as CardContent, CardHeader } from '@chakra-ui/react';
 import { sanityFetch, postQuery, settingsQuery } from '@DonaldNgai/next-utils/sanity';
@@ -70,7 +70,7 @@ export default async function PostPage({ params }: Props) {
   }
 
   return (
-    <Container maxW="7xl" px={{ base: 4, sm: 6, lg: 8 }}>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <Heading as="h2" size="2xl" mb="8">
         <Link href="/blog" style={{ textDecoration: 'none' }}>
           <Text
@@ -127,6 +127,6 @@ export default async function PostPage({ params }: Props) {
         </Heading>
         <MoreStoriesWrapper skip={post._id} limit={2} />
       </Box>
-    </Container>
+    </div>
   );
 }

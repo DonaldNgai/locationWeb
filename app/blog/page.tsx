@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { Container, Box, Heading, SimpleGrid, Skeleton } from '@chakra-ui/react';
+import { Box, Heading, SimpleGrid, Skeleton } from '@chakra-ui/react';
 import { CardRoot as Card, CardBody as CardContent, CardHeader } from '@chakra-ui/react';
 import { sanityFetch, heroQuery, settingsQuery } from '@DonaldNgai/next-utils/sanity';
 import type { HeroQueryResult } from '@DonaldNgai/next-utils/sanity';
@@ -58,7 +58,7 @@ export default async function BlogPage() {
   ]);
 
   return (
-    <Container maxW="7xl" px={{ base: 4, sm: 6, lg: 8 }}>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <BlogIntro title={settings?.title} description={settings?.description} />
       {heroPost && (
         <HeroPost
@@ -78,6 +78,6 @@ export default async function BlogPage() {
           <MoreStoriesWrapper skip={heroPost._id} limit={100} />
         </Box>
       )}
-    </Container>
+    </div>
   );
 }

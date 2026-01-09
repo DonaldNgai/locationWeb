@@ -1,6 +1,5 @@
 import React from 'react';
 import type { Metadata } from 'next';
-import { Container } from '@chakra-ui/react';
 import { sanityFetch, settingsQuery } from '@DonaldNgai/next-utils/sanity';
 import { resolveOpenGraphImage } from '@DonaldNgai/next-utils/sanity/client-utils';
 
@@ -55,9 +54,9 @@ export default async function BlogLayout({
 }) {
   return (
     <section className="min-h-screen py-8">
-      <Container maxW="7xl" px={{ base: 4, sm: 6, lg: 8 }}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {children}
-      </Container>
+      </div>
     </section>
   );
 }
