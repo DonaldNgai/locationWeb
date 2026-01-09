@@ -488,7 +488,7 @@ export default function DashboardPage() {
                       <Popover.Root 
                         open={isGroupPopoverOpen} 
                         onOpenChange={(open) => {
-                          setIsGroupPopoverOpen(open);
+                          setIsGroupPopoverOpen(open.open);
                           if (!open) {
                             setGroupSearchQuery('');
                           }
@@ -511,7 +511,7 @@ export default function DashboardPage() {
                         </PopoverTrigger>
                         <PopoverContent 
                           className="w-[var(--reference-width)] p-0" 
-                          align="start"
+                          alignItems="start"
                         >
                         <VStack align="stretch" gap={0}>
                           {/* Search Input */}

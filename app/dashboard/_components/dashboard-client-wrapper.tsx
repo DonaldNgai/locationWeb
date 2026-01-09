@@ -3,7 +3,7 @@
 import { ReactNode } from 'react';
 import { AppSidebar } from './sidebar/app-sidebar';
 import { Separator, SidebarInset, SidebarProvider, SidebarTrigger } from '@DonaldNgai/chakra-ui';
-import { cn } from '@DonaldNgai/chakra-ui';
+import { cn } from '@DonaldNgai/chakra-ui/utils';
 import { Toaster } from '@DonaldNgai/chakra-ui';
 import { PreferencesStoreProvider } from '@DonaldNgai/chakra-ui/stores';
 import type { ThemeMode, ThemePreset } from '@DonaldNgai/next-utils';

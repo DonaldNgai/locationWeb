@@ -11,6 +11,7 @@ const config: Config = {
     './node_modules/@DonaldNgai/chakra-ui/src/**/*.{js,ts,jsx,tsx,mdx}',
     './node_modules/@DonaldNgai/chakra-ui/dist/**/*.{js,mjs,tsx,jsx}',
   ],
+  // @ts-expect-error - corePlugins is valid but not in TypeScript types for Tailwind v4
   corePlugins: {
     preflight: false,
   },
