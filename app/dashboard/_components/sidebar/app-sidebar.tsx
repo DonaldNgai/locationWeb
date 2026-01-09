@@ -86,7 +86,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <img
                   src="/logo-icon.png"
                   alt={APP_CONFIG.name}
-                  className="h-7 w-auto hidden group-data-[collapsible=icon]:block"
+                  className="h-5 w-auto hidden group-data-[collapsible=icon]:block"
                 />
               </Link>
             </SidebarMenuButton>
