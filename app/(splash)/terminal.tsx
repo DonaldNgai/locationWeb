@@ -7,10 +7,19 @@ export function Terminal() {
   const [terminalStep, setTerminalStep] = useState(0);
   const [copied, setCopied] = useState(false);
   const terminalSteps = [
-    'npm install @location/api-client',
-    'const client = new LocationClient({ apiKey: "YOUR_KEY" })',
-    'await client.trackLocation({ lat: 37.7749, lng: -122.4194 })',
-    '// That\'s it! Location tracking active 🚀',
+    'npm install gofindme',
+    'const client = new GoFindMe({ apiKey: "YOUR_KEY" })',
+    '',
+    '// Subscribe to real-time location updates:',
+    'client.subscribe((location) => {',
+    '  console.log("New location:", location);',
+    '});',
+    '',
+    '// Or query for the latest locations:',
+    'const locations = await client.getLocations();',
+    'console.log(locations);',
+    '',
+    '// That\'s it! Start building with GoFindMe 🚀',
   ];
 
   useEffect(() => {

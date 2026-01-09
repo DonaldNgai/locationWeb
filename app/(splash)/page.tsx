@@ -25,7 +25,7 @@ import {
 } from '@chakra-ui/react';
 
 import { useRouter } from 'next/navigation';
-import { OutlineButton } from '@DonaldNgai/chakra-ui';
+import { OutlineButton, EmailSubscribe } from '@DonaldNgai/chakra-ui';
 
 import { FadeIn, FadeInStagger, FadeInStaggerItem, WordDivider } from '@DonaldNgai/chakra-ui';
 import { ArrowRight, Code, Zap, Shield, Cpu, Smartphone, Sparkles, Lock, Database, Star } from 'lucide-react';
@@ -144,7 +144,7 @@ export default function HomePage() {
       </Box>
 
       {/* Hero Section */}
-      <Box as="section" position="relative" py={{ base: 20, lg: 32 }} overflow="hidden" zIndex="10">
+      <Box as="section" position="relative" py={{ base: 15, lg: 20 }} overflow="hidden" zIndex="10">
         <Container maxW="7xl" px={{ base: 4, sm: 6, lg: 8 }}>
           <FadeInStagger>
             <Grid templateColumns={{ base: '1fr', lg: '1fr 1fr' }} gap={{ base: 8, lg: 12 }} alignItems="center">
@@ -219,6 +219,29 @@ export default function HomePage() {
               </FadeInStaggerItem>
             </Grid>
           </FadeInStagger>
+        </Container>
+      </Box>
+
+      {/* Email Subscribe Section */}
+      <Box as="section" pb="16" position="relative" zIndex="10">
+        <Container maxW="2xl" px={{ base: 4, sm: 6, lg: 8 }}>
+          <FadeIn>
+            <VStack gap="6" textAlign="center">
+              <Text fontSize="lg" color="fg.muted" mb="4">
+                Get notified about new features, updates, and best practices
+              </Text>
+              <Box width="full" maxW="md" mx="auto">
+                <EmailSubscribe
+                  showNameFields={true}
+                  emailPlaceholder="Enter your email"
+                  buttonText="Subscribe"
+                  subscriberGroup="Early Adopters"
+                  toastMessage="Successfully subscribed!"
+                  successMessage="Thanks for subscribing! We'll keep you updated."
+                />
+              </Box>
+            </VStack>
+          </FadeIn>
         </Container>
       </Box>
 
@@ -637,6 +660,8 @@ export default function HomePage() {
           </FadeIn>
         </Container>
       </Box>
+
+      
     </Box>
   );
 }

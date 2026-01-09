@@ -14,7 +14,7 @@ function Header() {
     <header className="border-b border-gray-200 bg-background relative z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
         <Link href="/" className="flex items-center">
-          <Image src="/logo.png" alt="FleetLink" width={150} height={600} />
+          <Image src="/logo.svg" alt="FleetLink" width={150} height={600} />
         </Link>
         <div className="flex items-center space-x-4">
           <OutlineButton

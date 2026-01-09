@@ -79,7 +79,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenuButton asChild size="lg" className="data-[slot=sidebar-menu-button]:!p-2">
               <Link href="/dashboard" className="flex items-center gap-2">
                 <img
-                  src="/logo.png"
+                  src="/logo.svg"
                   alt={APP_CONFIG.name}
                   className="h-6 w-auto group-data-[collapsible=icon]:hidden"
                 />
