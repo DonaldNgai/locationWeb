@@ -4,7 +4,8 @@
   "version": "2.0.0",
   "scripts": {
     "dev": "pnpm db:generate && next dev --turbopack --port 3001",
-    "build": "next build",
+    "prebuild": "pnpm generate:api",
+    "build": "pnpm db:generate && next build",
     "start": "next start",
     "lint": "echo 'No lint script configured'",
     "test": "echo 'No test script configured'",
